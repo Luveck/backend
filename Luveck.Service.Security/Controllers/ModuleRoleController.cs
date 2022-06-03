@@ -31,7 +31,11 @@ namespace Luveck.Service.Security.Controllers
         public async Task<IActionResult> getRoles()
         {
             var mdoulesRole = _moduleRoleRepository.GetModulesByRoles();
-            return Ok(mdoulesRole);
+            return Ok(new 
+            {
+                mdoulesRole 
+            }
+            );
         }
 
         [HttpPost]
