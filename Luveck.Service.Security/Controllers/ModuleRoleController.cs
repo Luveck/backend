@@ -12,7 +12,6 @@ namespace Luveck.Service.Security.Controllers
 {
     [Route("api/ModuleRoles")]
     [ApiController]
-    [Authorize]
     [ApiExplorerSettings(GroupName = "ApiSecurityModuleRole")]
     [ProducesResponseType(StatusCodes.Status501NotImplemented)]
     public class ModuleRoleController : ControllerBase
@@ -30,7 +29,7 @@ namespace Luveck.Service.Security.Controllers
         [ProducesResponseType(StatusCodes.Status501NotImplemented)]
         public async Task<IActionResult> getRoles()
         {
-            var mdoulesRole = _moduleRoleRepository.GetModulesByRoles();
+            var mdoulesRole = await _moduleRoleRepository.GetModulesByRoles();
             return Ok(new 
             {
                 mdoulesRole 
@@ -44,7 +43,7 @@ namespace Luveck.Service.Security.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UpdateModulesRole(List<ModuleRoleDto> moduleRoleDto)
         {
-            return Ok(_moduleRoleRepository.UpdateModulesByRole(moduleRoleDto));
+            return Ok(await _moduleRoleRepository.UpdateModulesByRole(moduleRoleDto));
         }
     }
 }

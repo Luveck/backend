@@ -27,11 +27,11 @@ namespace Luveck.Service.Administration.Repository
 
             if (country.Id > 0)
             {
-                _appDbContext.Update(country);
+                _appDbContext.Countries.Update(country);
             }
             else
             {
-                _appDbContext.Add(country);
+                _appDbContext.Countries.Add(country);
             }
 
             await _appDbContext.SaveChangesAsync();

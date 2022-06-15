@@ -37,6 +37,8 @@ namespace Luveck.Service.Security
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<AppDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Defaultconnection")));
+            services.AddScoped<IModuleRoleRepository, ModuleRoleRepository>();
+            services.AddScoped<IModuleRepository, ModuleRepository>();
             services.AddIdentity<IdentityUser, IdentityRole>().AddEntityFrameworkStores<AppDbContext>().AddDefaultTokenProviders();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -56,6 +58,7 @@ namespace Luveck.Service.Security
                 opt.Password.RequiredLength = 8;
                 opt.Password.RequireLowercase = true;
                 opt.Password.RequireUppercase = true;
+                opt.Password.RequireNonAlphanumeric = true;
                 opt.Password.RequiredUniqueChars = 1;
                 opt.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(30);
                 opt.Lockout.MaxFailedAccessAttempts = 3;
@@ -63,7 +66,6 @@ namespace Luveck.Service.Security
             //Envio por correo personal
             services.Configure<MailSettings>(Configuration.GetSection("MailSettings"));
             services.AddTransient<IMailService, Services.MailService>();
-            services.AddScoped<IModuleRoleRepository, ModuleRoleRepository>();
             services.AddAutoMapper(typeof(MapperConfigAdministration));
             services.AddControllers();
             services.AddSwaggerGen(c =>
@@ -85,6 +87,13 @@ namespace Luveck.Service.Security
                     Title = "Api Security Module by role",
                     Version = "v1",
                     Description = "Backend Module by role Roles",
+                });
+
+                c.SwaggerDoc("ApiSecurityModule", new OpenApiInfo()
+                {
+                    Title = "Api Security Module",
+                    Version = "v1",
+                    Description = "Backend Module",
                 });
 
                 c.AddSecurityDefinition("Bearer",
@@ -132,6 +141,7 @@ namespace Luveck.Service.Security
                 c.SwaggerEndpoint("/swagger/ApiSecurityAccount/swagger.json", "Api Security Account");
                 c.SwaggerEndpoint("/swagger/ApiSecurityRoles/swagger.json", "Api Security Roles");
                 c.SwaggerEndpoint("/swagger/ApiSecurityModuleRole/swagger.json", "Api Security Module by role");
+                c.SwaggerEndpoint("/swagger/ApiSecurityModule/swagger.json", "Api Security Module");
             });
 
             app.UseHttpsRedirection();

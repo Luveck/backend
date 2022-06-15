@@ -4,7 +4,9 @@ namespace Luveck.Service.Security.Models.Dtos
 {
     public class ListModuleRoleDto
     {
-        public IdentityRole rol { get; set; }
-        public Module module { get; set; }
+        public string idRole { get; set; }
+        public string roleName { get; set; }
+        public int idModule { get; set; }
+        public string moduleName { get; set; }
     }
 }

@@ -8,7 +8,7 @@ namespace Luveck.Service.Security.Models
         [Required]
         public string Name { get; set; }
         public string LastName { get; set; }
-        public string DNI { get; set; }
+        public bool changePass { get; set; }
         public bool State { get; set; }
     }
 }

@@ -16,7 +16,7 @@ namespace Luveck.Service.Security.Repository
     {
         public AppDbContext _db;
         public IMapper _mapper;
-        public ModuleRoleRepository( AppDbContext db, IMapper mapper)
+        public ModuleRoleRepository(AppDbContext db, IMapper mapper)
         {
             _db = db;
             _mapper = mapper;
@@ -24,17 +24,12 @@ namespace Luveck.Service.Security.Repository
 
         public async Task<IEnumerable<ListModuleRoleDto>> GetModulesByRoles()
         {
-            try
-            {
-                List<RoleModule> roleModules = await _db.RoleModules.ToListAsync();
-                return _mapper.Map<List<ListModuleRoleDto>>(roleModules);
-            }
-            catch (System.Exception ex)
-            {
-                var data = ex.Data;
-                return null;
-            }
-          
+
+            return (from mr in _db.RoleModules
+                    join r in _db.Roles on mr.role.Id equals r.Id
+                    join m in _db.Modules on mr.module.Id equals m.Id
+                    select (
+                    new ListModuleRoleDto { idRole = r.Id, roleName = r.Name, idModule = m.Id, moduleName = m.name })).ToList();
         }
 
         public async Task<List<ListModuleRoleDto>> UpdateModulesByRole(List<ModuleRoleDto> moduleRoleDtos)
@@ -48,9 +43,11 @@ namespace Luveck.Service.Security.Repository
                 IdentityRole role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == roleModule.RoleId);
                 foreach (int moduleId in roleModule.modulesId)
                 {
-                    _db.RoleModules.Add(new RoleModule { 
-                        module = await _db.modules.FirstOrDefaultAsync(m => m.Id == moduleId), 
-                        role = role});
+                    _db.RoleModules.Add(new RoleModule
+                    {
+                        module = await _db.Modules.FirstOrDefaultAsync(m => m.Id == moduleId),
+                        role = role
+                    });
                 }
                 await _db.SaveChangesAsync();
             }

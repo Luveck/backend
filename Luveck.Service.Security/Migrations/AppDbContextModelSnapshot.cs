@@ -59,6 +59,10 @@ namespace Luveck.Service.Security.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -75,6 +79,8 @@ namespace Luveck.Service.Security.Migrations
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.ToTable("AspNetRoles");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("IdentityRole");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -252,12 +258,19 @@ namespace Luveck.Service.Security.Migrations
                     b.ToTable("AspNetUserTokens");
                 });
 
+            modelBuilder.Entity("Luveck.Service.Security.Models.Role", b =>
+                {
+                    b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityRole");
+
+                    b.Property<int>("avilableDeleteTipe")
+                        .HasColumnType("int");
+
+                    b.HasDiscriminator().HasValue("Role");
+                });
+
             modelBuilder.Entity("Luveck.Service.Security.Models.User", b =>
                 {
                     b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityUser");
-
-                    b.Property<string>("DNI")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LastName")
                         .HasColumnType("nvarchar(max)");
@@ -267,6 +280,9 @@ namespace Luveck.Service.Security.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("State")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("changePass")
                         .HasColumnType("bit");
 
                     b.HasDiscriminator().HasValue("User");
