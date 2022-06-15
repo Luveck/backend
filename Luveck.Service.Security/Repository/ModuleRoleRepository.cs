@@ -24,7 +24,6 @@ namespace Luveck.Service.Security.Repository
 
         public async Task<IEnumerable<ListModuleRoleDto>> GetModulesByRoles()
         {
-
             return (from mr in _db.RoleModules
                     join r in _db.Roles on mr.role.Id equals r.Id
                     join m in _db.Modules on mr.module.Id equals m.Id
@@ -34,25 +33,29 @@ namespace Luveck.Service.Security.Repository
 
         public async Task<List<ListModuleRoleDto>> UpdateModulesByRole(List<ModuleRoleDto> moduleRoleDtos)
         {
+            var table = (from rm in _db.RoleModules select rm).ToList();
+
+            foreach (var row in table)
+            {
+                _db.RoleModules.Remove(row);
+            }
+            await _db.SaveChangesAsync();
+
             foreach (ModuleRoleDto roleModule in moduleRoleDtos)
             {
-                IEnumerable<RoleModule> moduleRole = await _db.RoleModules.Where(x => x.role.Id == roleModule.RoleId).ToListAsync();
-                _db.RoleModules.RemoveRange(moduleRole);
-                await _db.SaveChangesAsync();
-
-                IdentityRole role = await _db.Roles.FirstOrDefaultAsync(r => r.Id == roleModule.RoleId);
-                foreach (int moduleId in roleModule.modulesId)
+                var role = await _db.Roles.FirstOrDefaultAsync(x=> x.Id == roleModule.RoleId);
+                foreach (var id in roleModule.RoleId)
                 {
-                    _db.RoleModules.Add(new RoleModule
-                    {
-                        module = await _db.Modules.FirstOrDefaultAsync(m => m.Id == moduleId),
-                        role = role
-                    });
+                    var modulo = await _db.Modules.FirstOrDefaultAsync(x => x.Id == id);
+                    _db.RoleModules.Add(new RoleModule { role = role, module = modulo });
                 }
                 await _db.SaveChangesAsync();
             }
-            List<RoleModule> roleModules = await _db.RoleModules.ToListAsync();
-            return _mapper.Map<List<ListModuleRoleDto>>(roleModules);
+            return (from mr in _db.RoleModules
+                    join r in _db.Roles on mr.role.Id equals r.Id
+                    join m in _db.Modules on mr.module.Id equals m.Id
+                    select (
+                    new ListModuleRoleDto { idRole = r.Id, roleName = r.Name, idModule = m.Id, moduleName = m.name })).ToList();
         }
     }
 }
