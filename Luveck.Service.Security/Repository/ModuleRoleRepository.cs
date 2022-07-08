@@ -24,11 +24,11 @@ namespace Luveck.Service.Security.Repository
 
         public async Task<IEnumerable<ListModuleRoleDto>> GetModulesByRoles()
         {
-            return (from mr in _db.RoleModules
+            return await (from mr in _db.RoleModules
                     join r in _db.Roles on mr.role.Id equals r.Id
                     join m in _db.Modules on mr.module.Id equals m.Id
                     select (
-                    new ListModuleRoleDto { idRole = r.Id, roleName = r.Name, idModule = m.Id, moduleName = m.name })).ToList();
+                    new ListModuleRoleDto { idRole = r.Id, roleName = r.Name, idModule = m.Id, moduleName = m.name })).ToListAsync();
         }
 
         public async Task<List<ListModuleRoleDto>> UpdateModulesByRole(List<ModuleRoleDto> moduleRoleDtos)

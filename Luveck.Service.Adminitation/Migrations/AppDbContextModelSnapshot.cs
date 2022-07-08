@@ -51,7 +51,7 @@ namespace Luveck.Service.Administration.Migrations
 
                     b.HasIndex("departmentId");
 
-                    b.ToTable("Cities");
+                    b.ToTable("City");
                 });
 
             modelBuilder.Entity("Luveck.Service.Administration.Models.Country", b =>
@@ -99,7 +99,7 @@ namespace Luveck.Service.Administration.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Countries");
+                    b.ToTable("Country");
                 });
 
             modelBuilder.Entity("Luveck.Service.Administration.Models.Department", b =>
@@ -122,7 +122,45 @@ namespace Luveck.Service.Administration.Migrations
 
                     b.HasIndex("countryId");
 
-                    b.ToTable("Departments");
+                    b.ToTable("Department");
+                });
+
+            modelBuilder.Entity("Luveck.Service.Administration.Models.SBU", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("CreateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Status")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UpdateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("countryId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("countryId");
+
+                    b.ToTable("SBU");
                 });
 
             modelBuilder.Entity("Luveck.Service.Administration.Models.City", b =>
@@ -135,6 +173,15 @@ namespace Luveck.Service.Administration.Migrations
                 });
 
             modelBuilder.Entity("Luveck.Service.Administration.Models.Department", b =>
+                {
+                    b.HasOne("Luveck.Service.Administration.Models.Country", "Country")
+                        .WithMany()
+                        .HasForeignKey("countryId");
+
+                    b.Navigation("Country");
+                });
+
+            modelBuilder.Entity("Luveck.Service.Administration.Models.SBU", b =>
                 {
                     b.HasOne("Luveck.Service.Administration.Models.Country", "Country")
                         .WithMany()

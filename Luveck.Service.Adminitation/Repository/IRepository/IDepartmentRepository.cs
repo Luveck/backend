@@ -6,7 +6,7 @@ namespace Luveck.Service.Administration.Repository.IRepository
 {
     public interface IDepartmentRepository
     {
-        Task<IEnumerable<DepartmentDto>> GetDepartments();
-        Task<DepartmentDto> GetDepartment(int id);
+        Task<IEnumerable<DepartmentsDto>> GetDepartments();
+        Task<DepartmentsDto> GetDepartment(int id);
     }
 }

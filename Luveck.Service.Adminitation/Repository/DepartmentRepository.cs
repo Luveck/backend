@@ -1,11 +1,11 @@
 ﻿using AutoMapper;
 using Luveck.Service.Administration.Data;
-using Luveck.Service.Administration.Models;
 using Luveck.Service.Administration.Models.Dto;
 using Luveck.Service.Administration.Repository.IRepository;
-using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
 
 namespace Luveck.Service.Administration
 {
@@ -20,16 +20,36 @@ namespace Luveck.Service.Administration
             _mapper = mapper;
         }
     
-        public async Task<DepartmentDto> GetDepartment(int id)
+        public async Task<DepartmentsDto> GetDepartment(int id)
         {
-            Department department = await _appDbContext.Departments.FirstOrDefaultAsync(d => d.Id == id);
-            return _mapper.Map<DepartmentDto>(department);
+            return await (from d in _appDbContext.Department
+                          join c in _appDbContext.Country on d.Country.Id equals c.Id
+                          where c.Id == id
+                          select (
+                          new DepartmentsDto
+                          {
+                              Id = d.Id,
+                              Name = d.Name,
+                              StateCode = d.StateCode,
+                              countryId = c.Id,
+                              countryCode = c.Iso,
+                              countryName = c.Name,
+                          })).FirstOrDefaultAsync();
         }
 
-        public async Task<IEnumerable<DepartmentDto>> GetDepartments()
+        public async Task<IEnumerable<DepartmentsDto>> GetDepartments()
         {
-            List<Department> departmentList = await _appDbContext.Departments.ToListAsync();
-            return _mapper.Map<List<DepartmentDto>>(departmentList);
+            return await (from d in _appDbContext.Department
+                          join c in _appDbContext.Country on d.Country.Id equals c.Id
+                          select (
+                          new DepartmentsDto { 
+                              Id= d.Id, 
+                              Name = d.Name, 
+                              StateCode = d.StateCode,
+                              countryId = c.Id,
+                              countryCode = c.Iso,
+                              countryName = c.Name,
+                          })).ToListAsync();
         }
     }
 }

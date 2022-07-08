@@ -8,10 +8,9 @@ namespace Luveck.Service.Administration.Data
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {}
 
-        public DbSet<Country> Countries { get; set; }
-
-        public DbSet<Department> Departments { get; set; }
-        public DbSet<City> Cities { get; set; }
-        public DbSet<SBU> Sbu { get; set; }
+        public DbSet<Country> Country { get; set; }
+        public DbSet<Department> Department { get; set; }
+        public DbSet<City> City { get; set; }
+        public DbSet<SBU> SBU { get; set; }
     }
 }

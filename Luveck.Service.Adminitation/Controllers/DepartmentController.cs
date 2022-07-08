@@ -25,7 +25,7 @@ namespace Luveck.Service.Administration.Controllers
         [HttpGet]
         [Route("GetDepartment")]
         [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(List<DepartmentDto>))]
+        [ProducesResponseType(200, Type = typeof(List<DepartmentsDto>))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetCountries()
         {
@@ -41,7 +41,7 @@ namespace Luveck.Service.Administration.Controllers
         [HttpGet]
         [Route("GetDepartmentById")]
         [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(DepartmentDto))]
+        [ProducesResponseType(200, Type = typeof(DepartmentsDto))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetContryById(int Id)
         {

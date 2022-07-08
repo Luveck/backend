@@ -6,6 +6,7 @@ using Luveck.Service.Administration.Repository.IRepository;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace Luveck.Service.Administration.Repository
 {
@@ -26,11 +27,11 @@ namespace Luveck.Service.Administration.Repository
 
             if (city.Id > 0)
             {
-                _db.Cities.Update(city);
+                _db.City.Update(city);
             }
             else
             {
-                _db.Cities.Add(city);
+                _db.City.Add(city);
             }
 
             await _db.SaveChangesAsync();
@@ -40,14 +41,43 @@ namespace Luveck.Service.Administration.Repository
 
         public async Task<IEnumerable<CityDto>> GetCities()
         {
-            List<City> cityList = await _db.Cities.ToListAsync();
-            return _mapper.Map<List<CityDto>>(cityList);
+            return await (from city in _db.City
+                          join dep in _db.Department on city.department.Id equals dep.Id
+                          join country in _db.Country on dep.Country.Id equals country.Id
+                          select (new CityDto
+                          {
+                              Id = city.Id,
+                              Name = city.Name,
+                              StateId = dep.Id.ToString(),
+                              StateCode = dep.StateCode,
+                              stateName = dep.Name,
+                              countryId = country.Id.ToString(),
+                              countryName = country.Name,
+                              CreateBy = country.CreateBy,
+                              CreationDate = country.CreationDate,
+
+                          })).ToListAsync();
         }
 
         public async Task<CityDto> GetCity(int id)
         {
-            City city = await _db.Cities.FirstOrDefaultAsync(c => c.Id == id);
-            return _mapper.Map<CityDto>(city);
+            return await (from city in _db.City
+                          join dep in _db.Department on city.department.Id equals dep.Id
+                          join country in _db.Country on dep.Country.Id equals country.Id
+                          where city.Id == id
+                          select (new CityDto
+                          {
+                              Id = city.Id,
+                              Name = city.Name,
+                              StateId = dep.Id.ToString(),
+                              StateCode = dep.StateCode,
+                              stateName = dep.Name,
+                              countryId = country.Id.ToString(),
+                              countryName = country.Name,
+                              CreateBy = country.CreateBy,
+                              CreationDate = country.CreationDate,
+
+                          })).FirstOrDefaultAsync();
         }
     }
 }

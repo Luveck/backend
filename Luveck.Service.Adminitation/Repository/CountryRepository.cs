@@ -27,11 +27,11 @@ namespace Luveck.Service.Administration.Repository
 
             if (country.Id > 0)
             {
-                _appDbContext.Countries.Update(country);
+                _appDbContext.Country.Update(country);
             }
             else
             {
-                _appDbContext.Countries.Add(country);
+                _appDbContext.Country.Add(country);
             }
 
             await _appDbContext.SaveChangesAsync();
@@ -43,11 +43,11 @@ namespace Luveck.Service.Administration.Repository
         {
             try
             {
-                Country country = await _appDbContext.Countries.FirstOrDefaultAsync(c => c.Id == Id);
+                Country country = await _appDbContext.Country.FirstOrDefaultAsync(c => c.Id == Id);
 
                 if (country == null) return false;
 
-                _appDbContext.Countries.Remove(country);
+                _appDbContext.Country.Remove(country);
                 await _appDbContext.SaveChangesAsync();
                 return true;
             }
@@ -59,19 +59,19 @@ namespace Luveck.Service.Administration.Repository
 
         public async Task<IEnumerable<CountryDto>> GetCountries()
         {
-            List<Country> countryList = await _appDbContext.Countries.ToListAsync();
+            List<Country> countryList = await _appDbContext.Country.ToListAsync();
             return _mapper.Map<List<CountryDto>>(countryList);
         }
 
         public async Task<CountryDto> GetCountry(int id)
         {
-            Country country = await _appDbContext.Countries.FirstOrDefaultAsync(c => c.Id == id);
-            return _mapper.Map<CountryDto>(country);
+            Country country = await _appDbContext.Country.FirstOrDefaultAsync(c => c.Id == id);
+            return _mapper.Map<CountryDto>(country);            
         }
 
         public async Task<CountryDto> GetCountryName(string name)
         {
-            Country country = await _appDbContext.Countries.FirstOrDefaultAsync(c => c.Name.ToLower().Trim().Equals(name.ToLower().Trim()));
+            Country country = await _appDbContext.Country.FirstOrDefaultAsync(c => c.Name.ToLower().Trim().Equals(name.ToLower().Trim()));
             return _mapper.Map<CountryDto>(country);
         }
     }

@@ -10,7 +10,7 @@ namespace Luveck.Service.Administration.Mapper
         {
             CreateMap<Country, CountryDto>().ReverseMap();
             CreateMap<Country, CountryCreateUpdateDto>().ReverseMap();
-            CreateMap<Department, DepartmentDto>().ReverseMap();
+            CreateMap<Department, DepartmentsDto>().ReverseMap();
             CreateMap<City, CityDto>().ReverseMap();
             CreateMap<SBU, SBUDto>().ReverseMap();
         }

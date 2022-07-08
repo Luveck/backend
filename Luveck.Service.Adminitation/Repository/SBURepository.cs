@@ -25,11 +25,11 @@ namespace Luveck.Service.Administration.Repository
 
             if (sbu.Id > 0)
             {
-                _db.Update(sbu);
+                _db.SBU.Update(sbu);
             }
             else
             {
-                _db.Add(sbu);
+                _db.SBU.Add(sbu);
             }
 
             await _db.SaveChangesAsync();
@@ -39,14 +39,14 @@ namespace Luveck.Service.Administration.Repository
 
         public async Task<SBUDto> GetSBU(int id)
         {
-            SBU Sbu = await _db.Sbu.FirstOrDefaultAsync(c => c.Id == id);
-            return _mapper.Map<SBUDto>(Sbu);
+            SBU Sbu = await _db.SBU.FirstOrDefaultAsync(c => c.Id == id);
+            return _mapper.Map<SBUDto>(Sbu);            
         }
 
         public async Task<IEnumerable<SBUDto>> GetSBUs()
         {
-            List<SBU> sbuList = await _db.Sbu.ToListAsync();
-            return _mapper.Map<List<SBUDto>>(sbuList);
+            List<SBU> sbuList = await _db.SBU.ToListAsync();
+            return _mapper.Map<List<SBUDto>>(sbuList);            
         }
     }
 }
