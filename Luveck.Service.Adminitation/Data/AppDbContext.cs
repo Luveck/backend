@@ -12,5 +12,7 @@ namespace Luveck.Service.Administration.Data
         public DbSet<Department> Department { get; set; }
         public DbSet<City> City { get; set; }
         public DbSet<SBU> SBU { get; set; }
+        public DbSet<Category> Category { get; set; }
+        public DbSet<Product> Product { get; set; }
     }
 }

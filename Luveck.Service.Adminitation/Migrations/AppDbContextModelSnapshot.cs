@@ -19,6 +19,36 @@ namespace Luveck.Service.Administration.Migrations
                 .HasAnnotation("ProductVersion", "5.0.17")
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
+            modelBuilder.Entity("Luveck.Service.Administration.Models.Category", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("CreateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UpdateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("state")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Category");
+                });
+
             modelBuilder.Entity("Luveck.Service.Administration.Models.City", b =>
                 {
                     b.Property<int>("Id")
@@ -125,6 +155,41 @@ namespace Luveck.Service.Administration.Migrations
                     b.ToTable("Department");
                 });
 
+            modelBuilder.Entity("Luveck.Service.Administration.Models.Product", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<double>("Cost")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TypeSell")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("categoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("presentation")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("categoryId");
+
+                    b.ToTable("Product");
+                });
+
             modelBuilder.Entity("Luveck.Service.Administration.Models.SBU", b =>
                 {
                     b.Property<int>("Id")
@@ -179,6 +244,15 @@ namespace Luveck.Service.Administration.Migrations
                         .HasForeignKey("countryId");
 
                     b.Navigation("Country");
+                });
+
+            modelBuilder.Entity("Luveck.Service.Administration.Models.Product", b =>
+                {
+                    b.HasOne("Luveck.Service.Administration.Models.Category", "category")
+                        .WithMany()
+                        .HasForeignKey("categoryId");
+
+                    b.Navigation("category");
                 });
 
             modelBuilder.Entity("Luveck.Service.Administration.Models.SBU", b =>

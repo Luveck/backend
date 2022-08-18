@@ -13,6 +13,8 @@ namespace Luveck.Service.Administration.Mapper
             CreateMap<Department, DepartmentsDto>().ReverseMap();
             CreateMap<City, CityDto>().ReverseMap();
             CreateMap<SBU, SBUDto>().ReverseMap();
+            CreateMap<Category, CategoryDto>().ReverseMap();
+            CreateMap<Product, ProductDto>().ReverseMap();
         }
     }
 }

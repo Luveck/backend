@@ -35,6 +35,7 @@ namespace Luveck.Service.Administration
             services.AddScoped<ICountryRepository, CountryRepository>();
             services.AddScoped<IDepartmentRepository, DepartmentRepository>();
             services.AddScoped<ICityRepository, CityRepository>();
+            services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddAutoMapper(typeof(MapperConfigAdministration));
             services.AddControllers();
             services.AddSwaggerGen(c =>
@@ -65,6 +66,12 @@ namespace Luveck.Service.Administration
                     Version = "v1",
                     Description = "Backend SBU administration.",
                 });
+                c.SwaggerDoc("ApiAdminCategory", new OpenApiInfo()
+                {
+                    Title = "Api Categories",
+                    Version = "v1",
+                    Description = "Backend Categories administration.",
+                });
             });
             services.AddCors(options =>
             {
@@ -90,6 +97,7 @@ namespace Luveck.Service.Administration
                 c.SwaggerEndpoint("/swagger/ApiAdminDepartment/swagger.json", "Api Administration Department");
                 c.SwaggerEndpoint("/swagger/ApiAdminCity/swagger.json", "Api Administration City");
                 c.SwaggerEndpoint("/swagger/ApiAdminSBU/swagger.json", "Api Administration SBU");
+                c.SwaggerEndpoint("/swagger/ApiAdminCategory/swagger.json", "Api Administration Categories");
             });
 
             app.UseHttpsRedirection();
