@@ -233,26 +233,18 @@ namespace Luveck.Service.Security.Controllers
         [ProducesResponseType(StatusCodes.Status501NotImplemented)]
         public async Task<IActionResult> Login(LoginAuthDto loginAuthDto)
         {
-            var valid = new IdentityUser();
-            if (!string.IsNullOrEmpty(loginAuthDto.DNI))
-            {
-                valid = await _userManager.FindByNameAsync(loginAuthDto.DNI);
-            }
-            else
-            {
-                valid = await _userManager.FindByEmailAsync(loginAuthDto.Email);
-            }
+            var valid = await _userManager.FindByNameAsync(loginAuthDto.DNI);
 
             if (valid == null)
             {
                 return BadRequest("Usuario o contraseña invalido.");
             }
             var result = await _signInManager.PasswordSignInAsync(valid.UserName, loginAuthDto.Password,
-            loginAuthDto.RememberMe, lockoutOnFailure: true);
+            false, lockoutOnFailure: true);
 
             if (result.Succeeded)
             {
-                var user = await _userManager.FindByEmailAsync(loginAuthDto.Email);
+                var user = await _userManager.FindByEmailAsync(valid.Email);
                 var claims = new[]
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.Id),
@@ -274,10 +266,12 @@ namespace Luveck.Service.Security.Controllers
                             join r in _db.Roles on ur.RoleId equals r.Id
                             where ur.UserId == user.Id
                             select r).Take(1).FirstOrDefault();
-
+                var data = await _db.User.FirstOrDefaultAsync(x => x.Id == user.Id);
                 return Ok(new
                 {
                     resultado = result,
+                    name = data.Name,
+                    lastName = data.LastName,
                     token = tokenHandler.WriteToken(token),
                     intentos = user.AccessFailedCount,
                     HoraDesbloqueo = DateTime.Now,

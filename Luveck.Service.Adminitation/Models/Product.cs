@@ -17,6 +17,7 @@ namespace Luveck.Service.Administration.Models
         public string CreateBy { get; set; }
         public DateTime CreationDate { get; set; }
         public string UpdateBy { get; set; }
+        public bool state { get; set; }
         public DateTime UpdateDate { get; set; }
         [ForeignKey("categoryId")]
         public Category category { get; set; }

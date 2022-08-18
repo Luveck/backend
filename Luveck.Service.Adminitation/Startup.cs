@@ -4,18 +4,11 @@ using Luveck.Service.Administration.Repository;
 using Luveck.Service.Administration.Repository.IRepository;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Luveck.Service.Administration
 {
@@ -72,6 +65,12 @@ namespace Luveck.Service.Administration
                     Version = "v1",
                     Description = "Backend Categories administration.",
                 });
+                c.SwaggerDoc("ApiAdminProduct", new OpenApiInfo()
+                {
+                    Title = "Api Prooduct",
+                    Version = "v1",
+                    Description = "Backend Product administration.",
+                });
             });
             services.AddCors(options =>
             {
@@ -98,6 +97,7 @@ namespace Luveck.Service.Administration
                 c.SwaggerEndpoint("/swagger/ApiAdminCity/swagger.json", "Api Administration City");
                 c.SwaggerEndpoint("/swagger/ApiAdminSBU/swagger.json", "Api Administration SBU");
                 c.SwaggerEndpoint("/swagger/ApiAdminCategory/swagger.json", "Api Administration Categories");
+                c.SwaggerEndpoint("/swagger/ApiAdminProduct/swagger.json", "Api Administration Product");
             });
 
             app.UseHttpsRedirection();

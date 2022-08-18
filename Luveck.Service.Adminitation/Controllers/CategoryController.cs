@@ -28,7 +28,7 @@ namespace Luveck.Service.Administration.Controllers
         [AllowAnonymous]
         [ProducesResponseType(200, Type = typeof(List<CategoryDto>))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetCities()
+        public async Task<IActionResult> GetCategories()
         {
             var categories = await _category.GetCategories();
             return Ok(categories);
@@ -39,7 +39,7 @@ namespace Luveck.Service.Administration.Controllers
         [AllowAnonymous]
         [ProducesResponseType(200, Type = typeof(CategoryDto))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetContryById(int Id)
+        public async Task<IActionResult> GetCatedoryById(int Id)
         {
             var category = await _category.GetCategory(Id);
             return Ok(category);
@@ -76,7 +76,7 @@ namespace Luveck.Service.Administration.Controllers
         [HttpDelete]
         [Route("DeleteCategory")]
         [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(CategoryDto))]
+        [ProducesResponseType(200, Type = typeof(bool))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> DeleteCategory(int Id)
         {

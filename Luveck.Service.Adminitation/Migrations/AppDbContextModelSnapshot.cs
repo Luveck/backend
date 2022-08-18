@@ -165,6 +165,12 @@ namespace Luveck.Service.Administration.Migrations
                     b.Property<double>("Cost")
                         .HasColumnType("float");
 
+                    b.Property<string>("CreateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
@@ -177,11 +183,20 @@ namespace Luveck.Service.Administration.Migrations
                     b.Property<string>("TypeSell")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("UpdateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdateDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<int?>("categoryId")
                         .HasColumnType("int");
 
                     b.Property<string>("presentation")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("state")
+                        .HasColumnType("bit");
 
                     b.HasKey("Id");
 
