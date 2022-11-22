@@ -21,7 +21,7 @@ namespace Luveck.Service.Administration.Repository
             _mapper = mapper;
         }
 
-        public async Task<CountryCreateUpdateDto> CreateUpdateCountry(CountryCreateUpdateDto countryDto)
+        public async Task<CountryDto> CreateUpdateCountry(CountryDto countryDto)
         {
             Country country = _mapper.Map<Country>(countryDto);
 
@@ -36,7 +36,7 @@ namespace Luveck.Service.Administration.Repository
 
             await _appDbContext.SaveChangesAsync();
 
-            return _mapper.Map<CountryCreateUpdateDto>(country);
+            return _mapper.Map<CountryDto>(country);
         }
 
         public async Task<bool> DeleteCountry(int Id)

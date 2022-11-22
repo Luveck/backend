@@ -52,10 +52,15 @@ namespace Luveck.Service.Administration.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateCategory(CategoryDto categoryDto, string user)
         {
+            if (string.IsNullOrEmpty(user.Trim())) return BadRequest(new
+            {
+                message = "El usuario no puede ir vacio"
+            });
             categoryDto.CreationDate = DateTime.Now;
             categoryDto.CreateBy = user;
             categoryDto.UpdateDate = DateTime.Now;
             categoryDto.UpdateBy = user;
+            categoryDto.IsDeleted = false;
             CategoryDto category = await _category.CreateUpdateCategory(categoryDto);
             return Ok(category);
         }
@@ -67,6 +72,10 @@ namespace Luveck.Service.Administration.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UpdateCategory(CategoryDto categoryDto, string user)
         {
+            if (string.IsNullOrEmpty(user.Trim())) return BadRequest(new
+            {
+                message = "El usuario no puede ir vacio"
+            });
             categoryDto.UpdateDate = DateTime.Now;
             categoryDto.UpdateBy = user;
             CategoryDto category = await _category.CreateUpdateCategory(categoryDto);

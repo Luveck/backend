@@ -47,7 +47,7 @@ namespace Luveck.Service.Administration.Repository
 
                 if (category == null) return false;
 
-                category.state = false;
+                category.IsDeleted = true;
                 _appDbContext.Category.Update(category);
                 await _appDbContext.SaveChangesAsync();
                 return true;
@@ -61,11 +61,15 @@ namespace Luveck.Service.Administration.Repository
         public async Task<IEnumerable<CategoryDto>> GetCategories()
         {
             return await (from Category in _appDbContext.Category
-                          where Category.state == true
                           select (new CategoryDto
                           {
                               Id = Category.Id,
-                              Name = Category.Name,                             
+                              Name = Category.Name, 
+                              IsDeleted = Category.IsDeleted,
+                              CreateBy = Category.CreateBy,
+                              CreationDate = Category.CreationDate,
+                              UpdateBy = Category.UpdateBy,
+                              UpdateDate = Category.UpdateDate
                           })).ToListAsync();
         }
 

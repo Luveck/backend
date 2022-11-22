@@ -32,6 +32,9 @@ namespace Luveck.Service.Administration.Migrations
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
@@ -40,9 +43,6 @@ namespace Luveck.Service.Administration.Migrations
 
                     b.Property<DateTime>("UpdateDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<bool>("state")
-                        .HasColumnType("bit");
 
                     b.HasKey("Id");
 
@@ -65,9 +65,6 @@ namespace Luveck.Service.Administration.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("StateCode")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("UpdateBy")
                         .HasColumnType("nvarchar(max)");
 
@@ -76,6 +73,9 @@ namespace Luveck.Service.Administration.Migrations
 
                     b.Property<int?>("departmentId")
                         .HasColumnType("int");
+
+                    b.Property<bool>("state")
+                        .HasColumnType("bit");
 
                     b.HasKey("Id");
 
@@ -104,9 +104,6 @@ namespace Luveck.Service.Administration.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CurrencySymbol")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Iso")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Iso3")
@@ -139,20 +136,138 @@ namespace Luveck.Service.Administration.Migrations
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
+                    b.Property<string>("CreateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("StateCode")
+                    b.Property<string>("UpdateBy")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdateDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<int?>("countryId")
                         .HasColumnType("int");
+
+                    b.Property<bool>("status")
+                        .HasColumnType("bit");
 
                     b.HasKey("Id");
 
                     b.HasIndex("countryId");
 
                     b.ToTable("Department");
+                });
+
+            modelBuilder.Entity("Luveck.Service.Administration.Models.Medical", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("CreateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UpdateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("isDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("patologyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("register")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("patologyId");
+
+                    b.ToTable("Medical");
+                });
+
+            modelBuilder.Entity("Luveck.Service.Administration.Models.Patology", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("CreateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UpdateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdateDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Patology");
+                });
+
+            modelBuilder.Entity("Luveck.Service.Administration.Models.Pharmacy", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("Adress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CreateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UpdateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("cityId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("cityId");
+
+                    b.ToTable("Pharmacy");
                 });
 
             modelBuilder.Entity("Luveck.Service.Administration.Models.Product", b =>
@@ -177,8 +292,8 @@ namespace Luveck.Service.Administration.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
+                    b.Property<string>("Quantity")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TypeSell")
                         .HasColumnType("nvarchar(max)");
@@ -192,6 +307,12 @@ namespace Luveck.Service.Administration.Migrations
                     b.Property<int?>("categoryId")
                         .HasColumnType("int");
 
+                    b.Property<string>("descuento")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("descuentoLab")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("presentation")
                         .HasColumnType("nvarchar(max)");
 
@@ -203,6 +324,43 @@ namespace Luveck.Service.Administration.Migrations
                     b.HasIndex("categoryId");
 
                     b.ToTable("Product");
+                });
+
+            modelBuilder.Entity("Luveck.Service.Administration.Models.Purchase", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("CreateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NoPurchase")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UpdateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("pharmacyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("userId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("pharmacyId");
+
+                    b.HasIndex("userId");
+
+                    b.ToTable("Purchase");
                 });
 
             modelBuilder.Entity("Luveck.Service.Administration.Models.SBU", b =>
@@ -243,6 +401,71 @@ namespace Luveck.Service.Administration.Migrations
                     b.ToTable("SBU");
                 });
 
+            modelBuilder.Entity("Luveck.Service.Administration.Models.User", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("State")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("changePass")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("User");
+                });
+
             modelBuilder.Entity("Luveck.Service.Administration.Models.City", b =>
                 {
                     b.HasOne("Luveck.Service.Administration.Models.Department", "department")
@@ -261,6 +484,24 @@ namespace Luveck.Service.Administration.Migrations
                     b.Navigation("Country");
                 });
 
+            modelBuilder.Entity("Luveck.Service.Administration.Models.Medical", b =>
+                {
+                    b.HasOne("Luveck.Service.Administration.Models.Patology", "patology")
+                        .WithMany()
+                        .HasForeignKey("patologyId");
+
+                    b.Navigation("patology");
+                });
+
+            modelBuilder.Entity("Luveck.Service.Administration.Models.Pharmacy", b =>
+                {
+                    b.HasOne("Luveck.Service.Administration.Models.City", "city")
+                        .WithMany()
+                        .HasForeignKey("cityId");
+
+                    b.Navigation("city");
+                });
+
             modelBuilder.Entity("Luveck.Service.Administration.Models.Product", b =>
                 {
                     b.HasOne("Luveck.Service.Administration.Models.Category", "category")
@@ -268,6 +509,21 @@ namespace Luveck.Service.Administration.Migrations
                         .HasForeignKey("categoryId");
 
                     b.Navigation("category");
+                });
+
+            modelBuilder.Entity("Luveck.Service.Administration.Models.Purchase", b =>
+                {
+                    b.HasOne("Luveck.Service.Administration.Models.Pharmacy", "Pharmacy")
+                        .WithMany()
+                        .HasForeignKey("pharmacyId");
+
+                    b.HasOne("Luveck.Service.Administration.Models.User", "user")
+                        .WithMany()
+                        .HasForeignKey("userId");
+
+                    b.Navigation("Pharmacy");
+
+                    b.Navigation("user");
                 });
 
             modelBuilder.Entity("Luveck.Service.Administration.Models.SBU", b =>

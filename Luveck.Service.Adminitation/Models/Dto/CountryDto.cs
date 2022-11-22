@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Luveck.Service.Administration.Models.Dto
 {
+    [ExcludeFromCodeCoverage]
     public class CountryDto
     {
         public int Id { get; set; }

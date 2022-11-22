@@ -1,61 +1,65 @@
-﻿using AutoMapper;
-using Luveck.Service.Security.Data;
+﻿using Luveck.Service.Security.DTO.Response;
 using Luveck.Service.Security.Models;
-using Luveck.Service.Security.Models.Dtos;
 using Luveck.Service.Security.Repository.IRepository;
-using Microsoft.EntityFrameworkCore;
+using Luveck.Service.Security.UnitWork;
+using Luveck.Service.Security.Utils.Exceptions;
+using Luveck.Service.Security.Utils.Resource;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Luveck.Service.Security.Repository
 {
     public class ModuleRepository : IModuleRepository
     {
-        public AppDbContext _db;
-        public IMapper _mapper;
-        public ModuleRepository(AppDbContext db, IMapper mapper)
+        private readonly IUnitOfWork _unitOfWork;
+
+        public ModuleRepository(IUnitOfWork unitOfWork)
         {
-            _db = db;
-            _mapper = mapper;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<bool> delete(string name)
         {
+            var exist = await _unitOfWork.ModuleRepository.FirstOrDefaultNoTracking(x => x.name.ToLower() == name.ToLower());
+            if (exist == null) throw new BusinessException(GeneralMessage.ModuleExist);
             try
             {
-                Module module = await _db.Modules.FirstOrDefaultAsync(c => c.name.ToLower() == name);
+                _unitOfWork.ModuleRepository.Delete(exist);
 
-                if (module == null) return false;
-
-                _db.Modules.Remove(module);
-                await _db.SaveChangesAsync();
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return false;
+                throw ex;
             }
         }
 
-        public async Task<IEnumerable<ModuleDto>> GetModules()
+        public async Task<List<ModuleResponseDto>> GetModules()
         {
-            var modules = await _db.Modules.ToListAsync();
-            return _mapper.Map<List<ModuleDto>>(modules);
+            List<ModuleResponseDto> lst = _unitOfWork.ModuleRepository.AsQueryable().Select(x => new ModuleResponseDto()
+            {
+                Id= x.Id,
+                name = x.name,
+            }).ToList();
+
+            return lst;
         }
 
-        public async Task<Module> Insert(string name)
+        public async Task<GeneralResponseDto> Insert(string name)
         {            
-            if (!(await _db.Modules.ToListAsync()).Exists(x=> x.name.ToLower() == name.ToLower()))
+            var exist = await _unitOfWork.ModuleRepository.FirstOrDefaultNoTracking(x=> x.name.ToLower()==name.ToLower());
+            if (exist != null) throw new BusinessException(GeneralMessage.ModuleExist);
+            try
             {
-                var module = new Module {
-                    name = name
-                };
-                _db.Modules.Add(module);
+                await _unitOfWork.ModuleRepository.InsertAsync(new Module() { name = name });
+                return new GeneralResponseDto() { Code = "201", Message = GeneralMessage.ModuleCreate };
             }
-            await _db.SaveChangesAsync();
-
-            return await _db.Modules.FirstOrDefaultAsync(x=> x.name.ToLower() == name.ToLower());
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
     }
 }

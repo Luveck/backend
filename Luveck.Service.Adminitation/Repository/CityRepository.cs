@@ -23,7 +23,11 @@ namespace Luveck.Service.Administration.Repository
 
         public async Task<CityDto> CreateUpdateCity(CityDto cityDto)
         {
+            var dep = _db.Department.FirstOrDefaultAsync(x => x.Id == cityDto.departymentId);
+            if (dep == null) return null;
+            
             City city = _mapper.Map<City>(cityDto);
+            city.department = dep.Result;
 
             if (city.Id > 0)
             {
@@ -31,7 +35,9 @@ namespace Luveck.Service.Administration.Repository
             }
             else
             {
-                _db.City.Add(city);
+                var cityValid = _db.City.FirstOrDefaultAsync(x => x.Name == cityDto.Name);
+                if (cityValid != null) return _mapper.Map<CityDto>(cityValid);
+                else _db.City.Add(city);
             }
 
             await _db.SaveChangesAsync();
@@ -48,13 +54,15 @@ namespace Luveck.Service.Administration.Repository
                           {
                               Id = city.Id,
                               Name = city.Name,
-                              StateId = dep.Id.ToString(),
-                              StateCode = dep.StateCode,
-                              stateName = dep.Name,
-                              countryId = country.Id.ToString(),
+                              state = city.state,
+                              departmentName = dep.Name,
+                              departymentId = dep.Id,
+                              countryId = country.Id,
                               countryName = country.Name,
                               CreateBy = country.CreateBy,
                               CreationDate = country.CreationDate,
+                              UpdateBy = city.UpdateBy,
+                              UpdateDate = city.UpdateDate,
 
                           })).ToListAsync();
         }
@@ -69,13 +77,15 @@ namespace Luveck.Service.Administration.Repository
                           {
                               Id = city.Id,
                               Name = city.Name,
-                              StateId = dep.Id.ToString(),
-                              StateCode = dep.StateCode,
-                              stateName = dep.Name,
-                              countryId = country.Id.ToString(),
+                              state = city.state,
+                              departmentName = dep.Name,
+                              departymentId = dep.Id,
+                              countryId = country.Id,
                               countryName = country.Name,
                               CreateBy = country.CreateBy,
                               CreationDate = country.CreationDate,
+                              UpdateBy = city.UpdateBy,
+                              UpdateDate = city.UpdateDate,
 
                           })).FirstOrDefaultAsync();
         }

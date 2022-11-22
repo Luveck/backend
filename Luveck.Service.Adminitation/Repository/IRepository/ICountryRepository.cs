@@ -8,7 +8,7 @@ namespace Luveck.Service.Administration.Repository.IRepository
     {
         Task<IEnumerable<CountryDto>> GetCountries();
         Task<CountryDto> GetCountry(int id);
-        Task<CountryCreateUpdateDto> CreateUpdateCountry(CountryCreateUpdateDto countryDto);
+        Task<CountryDto> CreateUpdateCountry(CountryDto countryDto);
         Task<bool> DeleteCountry(int Id);
         Task<CountryDto> GetCountryName(string name);
     }

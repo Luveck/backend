@@ -8,7 +8,7 @@ namespace Luveck.Service.Administration.Models
         [Key]
         public int Id { get; set; }
         public string Name { get; set; }
-        public bool state { get; set; }
+        public bool IsDeleted { get; set; }
         public string CreateBy { get; set; }
         public DateTime CreationDate { get; set; }
         public string UpdateBy { get; set; }

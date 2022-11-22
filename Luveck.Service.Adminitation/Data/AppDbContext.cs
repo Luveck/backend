@@ -14,5 +14,10 @@ namespace Luveck.Service.Administration.Data
         public DbSet<SBU> SBU { get; set; }
         public DbSet<Category> Category { get; set; }
         public DbSet<Product> Product { get; set; }
+        public DbSet<Patology> Patology { get; set; }
+        public DbSet<Pharmacy> Pharmacy { get; set; }
+        public DbSet<Purchase> Purchase { get; set; }      
+        public DbSet<User> User { get; set; }
+        public DbSet<Medical> Medical { get; set; }
     }
 }

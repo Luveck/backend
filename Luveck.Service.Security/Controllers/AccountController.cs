@@ -1,541 +1,191 @@
-﻿using AutoMapper;
-using Luveck.Service.Security.Data;
+﻿using Luveck.Service.Security.DTO;
+using Luveck.Service.Security.DTO.Response;
+using Luveck.Service.Security.Handlers;
 using Luveck.Service.Security.Models;
-using Luveck.Service.Security.Models.Dtos;
 using Luveck.Service.Security.Repository.IRepository;
-using Luveck.Service.Security.Services;
+using Luveck.Service.Security.Utils.Jwt.Interface;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
+using System.Net;
 using System.Threading.Tasks;
+using static Luveck.Service.Security.Utils.enums.Enums;
 
 namespace Luveck.Service.Security.Controllers
-{
-    [Authorize]
+{    
     [Route("api/Security")]
     [ApiController]
+    [TypeFilter(typeof(CustomExceptionAttribute))]
     [ApiExplorerSettings(GroupName = "ApiSecurityAccount")]
-    [ProducesResponseType(StatusCodes.Status501NotImplemented)]
     public class AccountController : Controller
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
-        private readonly IConfiguration _config;
-        private readonly IMapper _mapper;
-        private readonly IEmailSender _emailSender;
-        private readonly AppDbContext _db;
+        private readonly IAutenticationService autenticationServices;
+        private readonly IHeaderClaims headerClaims;
 
-        private readonly IMailService _mailService;
-
-        public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager,
-            IConfiguration configuration, RoleManager<IdentityRole> roleManager, IEmailSender emailSender,
-            IMailService mailService, IMapper mapper, AppDbContext db)
+        public AccountController(IAutenticationService autenticationServices, IHeaderClaims headerClaims)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _config = configuration;
-            _roleManager = roleManager;
-            _emailSender = emailSender;
-            _mailService = mailService;
-            _mapper = mapper;
-            _db = db;
+            this.autenticationServices = autenticationServices;
+            this.headerClaims = headerClaims;
         }
 
-        [HttpPost]
         [Route("Register")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(string))]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status501NotImplemented)]
-        [ProducesDefaultResponseType]
-        public async Task<IActionResult> Register(RegisterUserDto userDto)
+        [HttpPost]
+        [ProducesResponseType((int)HttpStatusCode.OK)]
+        public async Task<IActionResult> Register(RegisterUserRequestDto requestUser)
         {
-            var role = new IdentityRole();
-            if (!await _roleManager.RoleExistsAsync("Admin"))
-            {                
-                role.Name = "Admin";
-                role.NormalizedName = "ADMIN";
-                role.ConcurrencyStamp = "0";
-                await _roleManager.CreateAsync(role);
-                role = new IdentityRole();
-                role.Name = "Cliente";
-                role.NormalizedName = "CLIENTE";
-                role.ConcurrencyStamp = "1";
-                await _roleManager.CreateAsync(role);
-            }
-            if (userDto.DNI.Length < 6)
-            {
-                return BadRequest("DNI Invalido");
-            }
-            var reviewMail = await _userManager.FindByEmailAsync(userDto.Email);
-            if (reviewMail != null) return BadRequest("Usuario ya existe con el correo electronico creado");
+            var token = await autenticationServices.Register(requestUser);
 
-            var reviewUserName = await _userManager.FindByNameAsync(userDto.DNI);
-            if (reviewUserName != null) return BadRequest("nombre de usuario ya existe.");
-
-            var user = new User
+            var response = new ResponseModel<LoginResponseDto>()
             {
-                UserName = userDto.DNI,
-                Email = userDto.Email,
-                Name = userDto.Name,
-                LastName = userDto.LastName,
-                PhoneNumber = userDto.Phone,
-                changePass = false,
-                State = true
+                IsSuccess = true,
+                Messages = "",
+                Result = token
+
             };
-
-            var result = await _userManager.CreateAsync(user, userDto.Password);
-            if (result.Succeeded)
-            {
-                var roles = _db.Roles.ToList();
-                role = roles.FirstOrDefault(x => x.ConcurrencyStamp == "1");
-                await _userManager.AddToRoleAsync(user, role.Name);
-                await _signInManager.SignInAsync(user, isPersistent: false);
-
-                var claims = new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id),
-                    new Claim(ClaimTypes.Name, user.UserName)
-                };
-
-                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetSection("AppSettings:Token").Value));
-                var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-                var tokenDescritor = new SecurityTokenDescriptor
-                {
-                    Subject = new ClaimsIdentity(claims),
-                    Expires = DateTime.Now.AddDays(1),
-                    SigningCredentials = credentials
-                };
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var token = tokenHandler.CreateToken(tokenDescritor);
-
-                return Ok(new
-                {
-                    resultado = result,
-                    token = tokenHandler.WriteToken(token),
-                    intentos = user.AccessFailedCount,
-                    HoraDesbloqueo = DateTime.Now,
-                    changePass = false,
-                    role = role,
-                });
-            }
-
-            return BadRequest();
+            return Ok(response);
         }
 
-        [HttpPost]
-        [Route("Create")]
-        [ProducesResponseType(200, Type = typeof(string))]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status501NotImplemented)]
-        public async Task<IActionResult> Create(CreateUserDto userDto)
-        {
-            if (!await _roleManager.RoleExistsAsync("Admin"))
-            {
-                var role = new IdentityRole();
-                role.Name = "Admin";
-                role.NormalizedName = "ADMIN";
-                role.ConcurrencyStamp = "0";
-                await _roleManager.CreateAsync(role);
-                role = new IdentityRole();
-                role.Name = "Cliente";
-                role.NormalizedName = "CLIENTE";
-                role.ConcurrencyStamp = "1";
-                await _roleManager.CreateAsync(role);
-            }
-            var reviewMail = await _userManager.FindByEmailAsync(userDto.Email);
-            if (reviewMail != null) return BadRequest("Usuario ya existe con el correo electronico creado");
-
-            var reviewUserName = await _userManager.FindByNameAsync(userDto.DNI);
-            if (reviewUserName != null) return BadRequest("nombre de usuario ya existe.");
-
-            var reviewRol = await _roleManager.FindByNameAsync(userDto.Role);
-            if (reviewUserName == null) return BadRequest("El role seleccionado no existe.");
-
-            var user = new User
-            {
-                UserName = userDto.DNI,
-                Email = userDto.Email,
-                Name = userDto.Name,
-                LastName = userDto.LastName,
-                changePass = true,
-                State = true
-            };
-
-            string passwordGenerated = Shared.GenerateRandomPassword();
-            var result = await _userManager.CreateAsync(user, passwordGenerated);
-
-            if (result.Succeeded)
-            {
-                await _userManager.AddToRoleAsync(user, reviewRol.Name);
-                MailRequest request = new MailRequest();
-                request.Body = "Se genero una contraseña para su primer ingreso, esta debe ser cambiada una vez ingrese. Contraseña: " + passwordGenerated;
-                request.Subject = "Contraseña Generada";
-                request.ToEmail = user.Email;
-
-                await _mailService.SendEmailAsync(request);
-
-                return Ok(new
-                {
-                    mensaje = "Usuario creado exitosamente",
-                    cracion = result
-                });
-            }
-
-            return BadRequest();
-        }
-
-        [HttpPost]
-        [Route("LogOff")]
-        public async Task<IActionResult> LogOff()
-        {
-            await _signInManager.SignOutAsync();
-            return Ok(_signInManager.Logger);
-        }
-
-        /// <summary>
-        /// Metodo para hacer Login
-        /// </summary>
-        /// <param name="loginAuthDto"></param>
-        /// <returns>
-        /// {
-        ///    "resultado": {
-        ///        "succeeded": true,
-        ///        "isLockedOut": false,
-        ///        "isNotAllowed": false,
-        ///        "requiresTwoFactor": false
-        ///    },
-        ///    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiI2ZjhkZjJiMi0yNzZiLTQwOTAtOWY0My1hMDNlNWEwZTkxM2YiLCJ1bmlxdWVfbmFtZSI6Imxlc3NuZXIiLCJyb2xlIjoiMSIsIm5iZiI6MTY0NzI5MDAzNSwiZXhwIjoxNjQ3MzE4ODM1LCJpYXQiOjE2NDcyOTAwMzV9.ZbfQR9l_TPJIdI1H5_mjptPIIJt2dszWLGE3_gBOsW4",
-        ///    "intentos": 0,
-        ///    "horaDesbloqueo": "2021-03-03T15:23:07.307753"
-        ///}
-        /// </returns>
-        [HttpPost]
         [Route("Login")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(string))]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status501NotImplemented)]
-        public async Task<IActionResult> Login(LoginAuthDto loginAuthDto)
-        {
-            var valid = await _userManager.FindByNameAsync(loginAuthDto.DNI);
-
-            if (valid == null)
-            {
-                return BadRequest("Usuario o contraseña invalido.");
-            }
-            var result = await _signInManager.PasswordSignInAsync(valid.UserName, loginAuthDto.Password,
-            false, lockoutOnFailure: true);
-
-            if (result.Succeeded)
-            {
-                var user = await _userManager.FindByEmailAsync(valid.Email);
-                var claims = new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id),
-                    new Claim(ClaimTypes.Name, user.UserName)
-                };
-
-                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetSection("AppSettings:Token").Value));
-                var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-                var tokenDescritor = new SecurityTokenDescriptor
-                {
-                    Subject = new ClaimsIdentity(claims),
-                    Expires = DateTime.Now.AddDays(1),
-                    SigningCredentials = credentials
-                };
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var token = tokenHandler.CreateToken(tokenDescritor);
-                var changePass = _db.User.FirstOrDefault(x => x.Id == user.Id).changePass;
-                var role = (from ur in _db.UserRoles
-                            join r in _db.Roles on ur.RoleId equals r.Id
-                            where ur.UserId == user.Id
-                            select r).Take(1).FirstOrDefault();
-                var data = await _db.User.FirstOrDefaultAsync(x => x.Id == user.Id);
-                return Ok(new
-                {
-                    resultado = result,
-                    name = data.Name,
-                    lastName = data.LastName,
-                    token = tokenHandler.WriteToken(token),
-                    intentos = user.AccessFailedCount,
-                    HoraDesbloqueo = DateTime.Now,
-                    changePass = changePass,
-                    role = role,
-                });
-            }
-
-            if (result.IsLockedOut)
-            {
-                return BadRequest("Usuario bloqueado por maximo de intentos.");
-            }
-
-            return Unauthorized();
-        }
-
-        /// <summary>
-        /// Metodo para el cambio de contraseña
-        /// </summary>
-        /// <param name="changePassword"></param>
-        /// <returns></returns>
         [HttpPost]
-        [Route("ChangePassword")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(IdentityUser))]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status501NotImplemented)]
-        public async Task<IActionResult> ChangePassword(ChangePasswordDto changePassword)
+        [ProducesResponseType((int)HttpStatusCode.OK)]
+        public async Task<IActionResult> Login(LoginUserRequestDto requestUser)
         {
-            var user = await _userManager.FindByEmailAsync(changePassword.mail);
+            var token = await autenticationServices.Login(requestUser.DNI, requestUser.Password);
 
-            if (user != null)
+            var response = new ResponseModel<LoginResponseDto>()
             {
-                var result = await _userManager.ChangePasswordAsync(user, changePassword.password, changePassword.newPassword);
+                IsSuccess = true,
+                Messages = "",
+                Result = token
 
-                if (result.Succeeded)
-                {
-                    return Ok(user);
-                }
-                return Unauthorized("Se presento un error realizando el cambio del password.");
-            }
-
-            return BadRequest("Información enviada no es valida.");
-        }
-
-        [HttpPost]
-        [Route("Forgot")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(string))]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status501NotImplemented)]
-        public async Task<IActionResult> ForgotPassword(ForgotPasswordDto forgot)
-        {
-            var user = await _userManager.FindByEmailAsync(forgot.Email);
-            if (user == null)
-            {
-                return BadRequest("Información incorrecta.");
-            }
-            var code = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-            try
-            {
-                MailRequest request = new MailRequest();
-                request.Body = "Para cambiar la contraseña <a href=\"" + _config.GetSection("Genearls:UrlForgot").Value + "/?mail=" + user.Email + "?id=" + code + "\">Da click aqui</a>";
-                request.Subject = "Resetear Contraseña";
-                request.ToEmail = user.Email;
-
-                await _mailService.SendEmailAsync(request);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    message = "Error enviando el correo para cambiar contraseña",
-                    error = ex.Message,
-                });
-
-            }
-            // await _emailSender.SendEmailAsync(user.Email, "Resetear Contraseña", "Para cambiar la contraseña <a href=\"" + _config.GetSection("Genearls:UrlForgot").Value + "?id=" + code + "\">Da click aqui</a>");
-
-
-        }
-
-        [HttpPost]
-        [Route("Reset")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(string))]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status501NotImplemented)]
-        public async Task<IActionResult> ResetPassword(ResetPasswordDto reset)
-        {
-            var user = await _userManager.FindByEmailAsync(reset.Email);
-            if (user == null)
-            {
-                return BadRequest("Información incorrecta.");
-            }
-
-            var result = await _userManager.ResetPasswordAsync(user, reset.Code, reset.Password);
-
-            if (result.Succeeded)
-            {
-                var claims = new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id),
-                    new Claim(ClaimTypes.Name, user.UserName)
-                    };
-
-                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetSection("AppSettings:Token").Value));
-                var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-                var tokenDescritor = new SecurityTokenDescriptor
-                {
-                    Subject = new ClaimsIdentity(claims),
-                    Expires = DateTime.Now.AddDays(1),
-                    SigningCredentials = credentials
-                };
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var token = tokenHandler.CreateToken(tokenDescritor);
-                var changePass = _db.User.FirstOrDefault(x => x.Id == user.Id).changePass;
-                return Ok(new
-                {
-                    resultado = result,
-                    token = tokenHandler.WriteToken(token),
-                    intentos = user.AccessFailedCount,
-                    HoraDesbloqueo = DateTime.Now,
-                    changePass = changePass,
-                });
-            }
-            return BadRequest("Información incorrecta.");
-        }
-
-        [HttpGet]
-        [Route("getUser")]
-        [ProducesResponseType(200, Type = typeof(string))]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status501NotImplemented)]
-        public async Task<IActionResult> getUser(string emailUser)
-        {
-            var user = new IdentityUser();
-            if (!string.IsNullOrEmpty(emailUser))
-            {
-                user = await _userManager.FindByNameAsync(emailUser);
-                if (user == null)
-                {
-                    user = await _userManager.FindByEmailAsync(emailUser);
-                    if (user == null)
-                    {
-                        return BadRequest("Usuario ingresado no existe.");
-                    }
-                }
-            }
-            else
-            {
-                return BadRequest("Debe enviar datos para la consulta.");
-            }
-
-            var role = (from ur in _db.UserRoles
-                        join r in _db.Roles on ur.RoleId equals r.Id
-                        where ur.UserId == user.Id
-                        select r).Take(1).FirstOrDefault();
-
-            return Ok(new
-            {
-                user = _mapper.Map<userDto>(user),
-                roleId = role.Id,
-                roleName = role.Name,
-
-            });
-        }
-
-        [HttpPost]
-        [Route("UpdateUser")]
-        [ProducesResponseType(200, Type = typeof(string))]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status501NotImplemented)]
-        public async Task<IActionResult> UpdateUser(userDto userDto, string emailAdmin)
-        {
-            var valid = await _userManager.FindByNameAsync(userDto.UserName);
-            if (valid == null)
-            {
-                return BadRequest("la información suministrada no existe en sistema.");
-            }
-            var validMail = await _userManager.FindByEmailAsync(userDto.Email);
-            if (validMail != null) return BadRequest("Correo electronico ya esta asignado.");
-
-            var user = new User
-            {
-                UserName = userDto.UserName,
-                Email = userDto.Email,
-                Name = userDto.Name,
-                LastName = userDto.LastName,
-                State = userDto.State,
             };
+            return Ok(response);
 
-            var result = await _userManager.UpdateAsync(user);
-
-            if (result.Succeeded && string.IsNullOrEmpty(emailAdmin.Trim()))
-            {
-                return Ok(new
-                {
-                    user = user,
-                    mensaje = "Usuario actualizado correctamente."
-                });
-            }
-
-            if (result.Succeeded)
-            {
-                var userChange = await _userManager.FindByEmailAsync(emailAdmin);
-
-                if ((_db.Roles.ToList()).FirstOrDefault(x => x.ConcurrencyStamp == "0").Id ==
-                    ((from ur in _db.UserRoles
-                      join r in _db.Roles on ur.RoleId equals r.Id
-                      where ur.UserId == userChange.Id
-                      select r).Take(1).FirstOrDefault()).Id)
-                {
-                    var deleteRole = (from ur in _db.UserRoles
-                                      join r in _db.Roles on ur.RoleId equals r.Id
-                                      where ur.UserId == user.Id
-                                      select r).Take(1).FirstOrDefault();
-                    await _userManager.RemoveFromRoleAsync(user, deleteRole.Name);
-                    await _userManager.AddToRoleAsync(user, userDto.role);
-                    return Ok(new
-                    {
-                        user = user,
-                        mensaje = "Usuario actualizado correctamente."
-                    });
-                }
-            }
-
-            return BadRequest("Se presento un problema actualizando la información");
         }
 
-        //[HttpPost]
-        //[Route("ConfirmEmail")]
-        //[AllowAnonymous]
-        //public async Task<IActionResult> ConfirmEmail(string userId, string Code)
-        //{
-        //    if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(Code))
-        //    {
-        //        return BadRequest("Los campos estan vacios.");
-        //    }
-        //    var user = await _userManager.FindByIdAsync(userId);
-        //    if (user == null)
-        //    {
-        //        return BadRequest("Información incorrecta.");
-        //    }
+        [Route("CreateUser")]
+        [HttpPost]
+        [Authorize]
+        [ProducesResponseType((int)HttpStatusCode.OK)]
+        public async Task<IActionResult> CreateUser(RegisterUserRequestDto requestUser, string role)
+        {
+            var token = await autenticationServices.Createuser(requestUser, role);
 
-        //    var result = await _userManager.ConfirmEmailAsync(user, Code);
+            var response = new ResponseModel<RegisterUserResponseDto>()
+            {
+                IsSuccess = token.Code == "201" ? true : false,
+                Messages = token.Message,
+                Result = token
 
-        //    if (result.Succeeded)
-        //    {
-        //        return Ok(result);
-        //    }
-        //    return BadRequest("Información incorrecta.");
-        //}
+            };
+            return Ok(response);
+        }
+
+        [Route("ChangePassword")]
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword(ChangePasswordRequestDto changePassword)
+        {
+            var token = await autenticationServices.changePassword(changePassword);
+
+            var response = new ResponseModel<RegisterUserResponseDto>()
+            {
+                IsSuccess = token.Code == "201" ? true : false,
+                Messages = token.Message,
+                Result = token
+
+            };
+            return Ok(response);
+        }
+
+        [Route("Forgot")]
+        [HttpPost]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordRequestDto forgot)
+        {
+            var token = await autenticationServices.forgotPassword(forgot.Email);
+
+            var response = new ResponseModel<RegisterUserResponseDto>()
+            {
+                IsSuccess = token.Code == "201" ? true : false,
+                Messages = token.Message,
+                Result = token
+
+            };
+            return Ok(response);
+        }
+
+        [Route("Reset")]
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword(ResetPasswordRequestDto reset)
+        {
+            var token = await autenticationServices.resetPassword(reset);
+
+            var response = new ResponseModel<LoginResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = token
+
+            };
+            return Ok(response);
+        }
+
+        [Route("getUser")]
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> getUser(string Email)
+        {
+            var token = await autenticationServices.getUser(Email);
+
+            var response = new ResponseModel<UserResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = token
+
+            };
+            return Ok(response);
+        }
+
+        [Route("UpdateUser")]
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> UpdateUser(RegisterUserRequestDto user, string role)
+        {
+            string roleRequestor = this.headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.Role);
+            var token = await autenticationServices.updateUser(user, role, roleRequestor);
+
+            var response = new ResponseModel<RegisterUserResponseDto>()
+            {
+                IsSuccess = token.Code == "201" ? true : false,
+                Messages = token.Message,
+                Result = token
+
+            };
+            return Ok(response);
+        }
+
+        ////[HttpPost]
+        ////[Route("ConfirmEmail")]
+        ////[AllowAnonymous]
+        ////public async Task<IActionResult> ConfirmEmail(string userId, string Code)
+        ////{
+        ////    if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(Code))
+        ////    {
+        ////        return BadRequest("Los campos estan vacios.");
+        ////    }
+        ////    var user = await _userManager.FindByIdAsync(userId);
+        ////    if (user == null)
+        ////    {
+        ////        return BadRequest("Información incorrecta.");
+        ////    }
+
+        ////    var result = await _userManager.ConfirmEmailAsync(user, Code);
+
+        ////    if (result.Succeeded)
+        ////    {
+        ////        return Ok(result);
+        ////    }
+        ////    return BadRequest("Información incorrecta.");
+        ////}
     }
 }

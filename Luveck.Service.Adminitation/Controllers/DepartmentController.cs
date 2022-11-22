@@ -1,8 +1,10 @@
-﻿using Luveck.Service.Administration.Models.Dto;
+﻿using Luveck.Service.Administration.Models;
+using Luveck.Service.Administration.Models.Dto;
 using Luveck.Service.Administration.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -47,6 +49,30 @@ namespace Luveck.Service.Administration.Controllers
         {
             var countries = await _departmentRepositoy.GetDepartment(Id);
             return Ok(countries);
+        }
+
+        [HttpPost]
+        [Route("CreateDepartment")]
+        [AllowAnonymous]
+        [ProducesResponseType(200, Type = typeof(DepartmentsDto))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> CreateDepartment(DepartmentsDto departmentDto, string user)
+        {
+            departmentDto.UpdateBy = user;
+            DepartmentsDto department = await _departmentRepositoy.CreateUpdateDepartment(departmentDto);
+            return Ok(department);
+        }
+
+        [HttpPut]
+        [Route("UpdateDepartment")]
+        [AllowAnonymous]
+        [ProducesResponseType(200, Type = typeof(DepartmentsDto))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> UpdateDepartment(DepartmentsDto departmentDto, string user)
+        {
+            departmentDto.UpdateBy = user;
+            DepartmentsDto department = await _departmentRepositoy.CreateUpdateDepartment(departmentDto);
+            return Ok(department);
         }
     }
 }

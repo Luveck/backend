@@ -1,61 +1,86 @@
-﻿using AutoMapper;
-using Luveck.Service.Security.Data;
-using Luveck.Service.Security.Models;
+﻿
 using Luveck.Service.Security.Repository.IRepository;
-using Microsoft.AspNetCore.Identity;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Luveck.Service.Administration.Models.Dto;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
-using Luveck.Service.Security.Models.Dtos;
+using Luveck.Service.Security.DTO.Response;
+using Luveck.Service.Security.UnitWork;
+using Luveck.Service.Security.DTO;
+using Luveck.Service.Security.Models;
 
 namespace Luveck.Service.Security.Repository
 {
     public class ModuleRoleRepository : IModuleRoleRepository
     {
-        public AppDbContext _db;
-        public IMapper _mapper;
-        public ModuleRoleRepository(AppDbContext db, IMapper mapper)
+        private readonly IUnitOfWork _unitOfWork;
+        public ModuleRoleRepository(IUnitOfWork unitOfWork)
         {
-            _db = db;
-            _mapper = mapper;
+            _unitOfWork = unitOfWork;
         }
 
-        public async Task<IEnumerable<ListModuleRoleDto>> GetModulesByRoles()
+        public async Task<List<ModuleRoleResponseDto>> GetModulesByRoles()
         {
-            return await (from mr in _db.RoleModules
-                    join r in _db.Roles on mr.role.Id equals r.Id
-                    join m in _db.Modules on mr.module.Id equals m.Id
-                    select (
-                    new ListModuleRoleDto { idRole = r.Id, roleName = r.Name, idModule = m.Id, moduleName = m.name })).ToListAsync();
+            List<ModuleRoleResponseDto> lst = await (from mr in _unitOfWork.RoleModuleRepository.AsQueryable() 
+                                                     join m in this._unitOfWork.ModuleRepository.AsQueryable() on mr.module.Id equals m.Id
+                                                     join r in _unitOfWork.RoleRepository.AsQueryable() on mr.role.Id equals r.Id
+                                                     select new ModuleRoleResponseDto()
+                                                     {
+                                                         idModule = mr.module.Id,
+                                                         idRole= mr.role.Id,
+                                                         moduleName = m.name,
+                                                         roleName = r.Name
+                                                     }).ToListAsync();
+
+            return lst;                        
         }
 
-        public async Task<List<ListModuleRoleDto>> UpdateModulesByRole(List<ModuleRoleDto> moduleRoleDtos)
+        public async Task<List<ModuleRoleResponseDto>> UpdateModulesByRole(List<ModuleRoleRequestDto> moduleRoleDtos)
         {
-            var table = (from rm in _db.RoleModules select rm).ToList();
-
-            foreach (var row in table)
+            var table = _unitOfWork.RoleModuleRepository.AsQueryable();
+            try
             {
-                _db.RoleModules.Remove(row);
-            }
-            await _db.SaveChangesAsync();
+                _unitOfWork.RoleModuleRepository.Delete(table);
+                await _unitOfWork.SaveAsync();
 
-            foreach (ModuleRoleDto roleModule in moduleRoleDtos)
-            {
-                var role = await _db.Roles.FirstOrDefaultAsync(x=> x.Id == roleModule.RoleId);
-                foreach (var id in roleModule.RoleId)
+                List<RoleModule> roleModules= new List<RoleModule>();
+
+                foreach (var item in moduleRoleDtos)
                 {
-                    var modulo = await _db.Modules.FirstOrDefaultAsync(x => x.Id == id);
-                    _db.RoleModules.Add(new RoleModule { role = role, module = modulo });
+                    var role = await _unitOfWork.RoleRepository.FirstOrDefaultNoTracking(x => x.Id.Equals(item));
+                    foreach (var module in item.moduleId)
+                    {
+                        var mod = await _unitOfWork.ModuleRepository.FirstOrDefaultNoTracking(x => x.Id == module);
+                        roleModules.Add(new RoleModule()
+                        {
+                            module = mod,
+                            role = role
+                        });
+                    }
                 }
-                await _db.SaveChangesAsync();
+
+                await _unitOfWork.RoleModuleRepository.InsertRangeAsync(roleModules);
+
+                List<ModuleRoleResponseDto> lst = await (from mr in _unitOfWork.RoleModuleRepository.AsQueryable()
+                                                         join m in this._unitOfWork.ModuleRepository.AsQueryable() on mr.module.Id equals m.Id
+                                                         join r in _unitOfWork.RoleRepository.AsQueryable() on mr.role.Id equals r.Id
+                                                         select new ModuleRoleResponseDto()
+                                                         {
+                                                             idModule = mr.module.Id,
+                                                             idRole = mr.role.Id,
+                                                             moduleName = m.name,
+                                                             roleName = r.Name
+                                                         }).ToListAsync();
+
+                return lst;
             }
-            return (from mr in _db.RoleModules
-                    join r in _db.Roles on mr.role.Id equals r.Id
-                    join m in _db.Modules on mr.module.Id equals m.Id
-                    select (
-                    new ListModuleRoleDto { idRole = r.Id, roleName = r.Name, idModule = m.Id, moduleName = m.name })).ToList();
+            catch (System.Exception Ex)
+            {
+
+                throw Ex;
+            }
+
+            return null;
         }
     }
 }

@@ -75,6 +75,22 @@ namespace Luveck.Service.Security.Migrations
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.ToTable("AspNetRoles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "3eb638a5-b2e4-450a-b98b-c4da6b2b3b15",
+                            ConcurrencyStamp = "0",
+                            Name = "Admin",
+                            NormalizedName = "ADMIN"
+                        },
+                        new
+                        {
+                            Id = "06043528-9ff5-4154-9e90-4f4a83fda808",
+                            ConcurrencyStamp = "1",
+                            Name = "Cliente",
+                            NormalizedName = "CLIENTE"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -260,7 +276,6 @@ namespace Luveck.Service.Security.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("State")

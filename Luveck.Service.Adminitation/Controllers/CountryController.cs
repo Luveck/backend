@@ -48,9 +48,9 @@ namespace Luveck.Service.Administration.Controllers
         [HttpPost]
         [Route("CreateUpdateCountry")]
         [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(CountryCreateUpdateDto))]
+        [ProducesResponseType(200, Type = typeof(CountryDto))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CreateUpdateCountry(CountryCreateUpdateDto countryCreateUpdateDto, string user)
+        public async Task<IActionResult> CreateUpdateCountry(CountryDto countryCreateUpdateDto, string user)
         {
             if (countryCreateUpdateDto.Id > 0)
             {
@@ -73,11 +73,11 @@ namespace Luveck.Service.Administration.Controllers
                     });
                 }
             }
-            
 
-            CountryCreateUpdateDto countryCreateUpdate = await _countryRepository.CreateUpdateCountry(countryCreateUpdateDto);
 
-            return Ok(countryCreateUpdate);
+            CountryDto countryDto = await _countryRepository.CreateUpdateCountry(countryCreateUpdateDto);
+
+            return Ok(countryDto);
         }         
     }
 }

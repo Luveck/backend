@@ -74,7 +74,6 @@ namespace Luveck.Service.Administration.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UpdateProduct(ProductDto productDto, string user)
         {
-            productDto.UpdateDate = DateTime.Now;
             productDto.UpdateBy = user;
             ProductDto product = await _product.CreateUpdateProduct(productDto);
             return Ok(product);
@@ -87,9 +86,10 @@ namespace Luveck.Service.Administration.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateProduct(ProductDto productDto, string user)
         {
-            productDto.CreationDate = DateTime.Now;
-            productDto.CreateBy = user;
-            productDto.UpdateDate = DateTime.Now;
+            if(string.IsNullOrEmpty(productDto.Name) || string.IsNullOrEmpty(user))
+            {
+                return BadRequest("No puede enviar el nombre y/o el usuario vacio.");
+            }
             productDto.UpdateBy = user;
             ProductDto product = await _product.CreateUpdateProduct(productDto);
             return Ok(product);

@@ -8,5 +8,6 @@ namespace Luveck.Service.Administration.Repository.IRepository
     {
         Task<IEnumerable<DepartmentsDto>> GetDepartments();
         Task<DepartmentsDto> GetDepartment(int id);
+        Task<DepartmentsDto> CreateUpdateDepartment(DepartmentsDto departmentDto);
     }
 }

@@ -1,8 +1,10 @@
-﻿using Luveck.Service.Administration.Models.Dto;
+﻿using Luveck.Service.Administration.Data;
+using Luveck.Service.Administration.Models.Dto;
 using Luveck.Service.Administration.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -17,10 +19,12 @@ namespace Luveck.Service.Administration.Controllers
     public class CityController : ControllerBase
     {
         public ICityRepository _cityRepository;
+        private TokenValidation tokenValidation;
 
-        public CityController(ICityRepository cityRepository)
+        public CityController(ICityRepository cityRepository, IConfiguration configuration)
         {
             _cityRepository = cityRepository;
+            tokenValidation = new TokenValidation(configuration);
         }
 
         [HttpGet]
@@ -30,6 +34,7 @@ namespace Luveck.Service.Administration.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetCities()
         {
+            //tokenValidation.ValidateJwtToken(token);
             var cities = await _cityRepository.GetCities();
             return Ok(cities);
         }
@@ -37,7 +42,7 @@ namespace Luveck.Service.Administration.Controllers
         [HttpGet]
         [Route("GetCityById")]
         [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(CountryDto))]
+        [ProducesResponseType(200, Type = typeof(CityDto))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetContryById(int Id)
         {
@@ -48,7 +53,7 @@ namespace Luveck.Service.Administration.Controllers
         [HttpPost]
         [Route("CreateUpdateCity")]
         [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(CountryCreateUpdateDto))]
+        [ProducesResponseType(200, Type = typeof(CityDto))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateUpdateCountry(CityDto cityCreateUpdateDto, string user)
         {

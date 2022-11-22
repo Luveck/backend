@@ -29,6 +29,11 @@ namespace Luveck.Service.Administration
             services.AddScoped<IDepartmentRepository, DepartmentRepository>();
             services.AddScoped<ICityRepository, CityRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
+            services.AddScoped<IPatologyRepository, PatologyRepository>();
+            services.AddScoped<IPharmacyRepository, PharmacyRepository>();
+            services.AddScoped<IMedicalRepository, MedicalRespository>();
+            services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<IPurchaseRepository, PurchaseRepository>();
             services.AddAutoMapper(typeof(MapperConfigAdministration));
             services.AddControllers();
             services.AddSwaggerGen(c =>
@@ -71,6 +76,30 @@ namespace Luveck.Service.Administration
                     Version = "v1",
                     Description = "Backend Product administration.",
                 });
+                c.SwaggerDoc("ApiAdminPatology", new OpenApiInfo()
+                {
+                    Title = "Api Patology",
+                    Version = "v1",
+                    Description = "Backend Patology administration.",
+                });
+                c.SwaggerDoc("ApiAdminPharmacy", new OpenApiInfo()
+                {
+                    Title = "Api Pharmacy",
+                    Version = "v1",
+                    Description = "Backend Pharmacy administration.",
+                });
+                c.SwaggerDoc("ApiAdminMedical", new OpenApiInfo()
+                {
+                    Title = "Api Medical",
+                    Version = "v1",
+                    Description = "Backend Medical administration.",
+                });
+                c.SwaggerDoc("ApiAdminPurchase", new OpenApiInfo()
+                {
+                    Title = "Api Purchase",
+                    Version = "v1",
+                    Description = "Backend Purchase administration.",
+                });
             });
             services.AddCors(options =>
             {
@@ -98,6 +127,10 @@ namespace Luveck.Service.Administration
                 c.SwaggerEndpoint("/swagger/ApiAdminSBU/swagger.json", "Api Administration SBU");
                 c.SwaggerEndpoint("/swagger/ApiAdminCategory/swagger.json", "Api Administration Categories");
                 c.SwaggerEndpoint("/swagger/ApiAdminProduct/swagger.json", "Api Administration Product");
+                c.SwaggerEndpoint("/swagger/ApiAdminPatology/swagger.json", "Api Administration Patology");
+                c.SwaggerEndpoint("/swagger/ApiAdminPharmacy/swagger.json", "Api Administration Pharmacy");
+                c.SwaggerEndpoint("/swagger/ApiAdminMedical/swagger.json", "Api Administration Medical");
+                c.SwaggerEndpoint("/swagger/ApiAdminPurchase/swagger.json", "Api Administration Purchase");
             });
 
             app.UseHttpsRedirection();
