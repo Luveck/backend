@@ -1,13 +1,15 @@
-﻿using Luveck.Service.Administration.Data;
-using Luveck.Service.Administration.Models.Dto;
+﻿using Luveck.Service.Administration.DTO;
+using Luveck.Service.Administration.DTO.Response;
+using Luveck.Service.Administration.Handlers;
+using Luveck.Service.Administration.Models;
 using Luveck.Service.Administration.Repository.IRepository;
+using Luveck.Service.Administration.Utils.Jwt.Interface;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
+using static Luveck.Service.Administration.Utils.enums.Enums;
 
 namespace Luveck.Service.Administration.Controllers
 {
@@ -15,63 +17,125 @@ namespace Luveck.Service.Administration.Controllers
     [Route("api/Administration")]
     [ApiController]
     [ApiExplorerSettings(GroupName = "ApiAdminCity")]
-    [ProducesResponseType(StatusCodes.Status501NotImplemented)]
+    [TypeFilter(typeof(CustomExceptionAttribute))]
     public class CityController : ControllerBase
     {
         public ICityRepository _cityRepository;
-        private TokenValidation tokenValidation;
+        private readonly IHeaderClaims _headerClaims;
 
-        public CityController(ICityRepository cityRepository, IConfiguration configuration)
+        public CityController(ICityRepository cityRepository, IHeaderClaims headerClaims)
         {
             _cityRepository = cityRepository;
-            tokenValidation = new TokenValidation(configuration);
+            _headerClaims = headerClaims;
         }
 
         [HttpGet]
         [Route("GetCities")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(List<CityDto>))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ResponseModel<List<CityResponseDto>>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetCities()
         {
-            //tokenValidation.ValidateJwtToken(token);
-            var cities = await _cityRepository.GetCities();
-            return Ok(cities);
+            List<CityResponseDto> result = await _cityRepository.GetCities();
+            var response = new ResponseModel<List<CityResponseDto>>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
+        }
+
+        [HttpGet]
+        [Route("GetCitiesByDepartment")]
+        [ProducesResponseType(typeof(ResponseModel<List<CityResponseDto>>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetCitiesByDepartment(int departmentid)
+        {
+            List<CityResponseDto> result = await _cityRepository.GetCitiesByDepartment(departmentid);
+            var response = new ResponseModel<List<CityResponseDto>>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
+        }
+
+        [HttpGet]
+        [Route("GetCityByName")]
+        [ProducesResponseType(typeof(ResponseModel<CityResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetCityByName(string name)
+        {
+            CityResponseDto result = await _cityRepository.GetCityByName(name);
+            var response = new ResponseModel<CityResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpGet]
         [Route("GetCityById")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(CityDto))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetContryById(int Id)
+        [ProducesResponseType(typeof(ResponseModel<CityResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetCityById(int id)
         {
-            var city = await _cityRepository.GetCity(Id);
-            return Ok(city);
+            CityResponseDto result = await _cityRepository.GetCityById(id);
+            var response = new ResponseModel<CityResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpPost]
-        [Route("CreateUpdateCity")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(CityDto))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CreateUpdateCountry(CityDto cityCreateUpdateDto, string user)
+        [Route("CreateCity")]
+        [ProducesResponseType(typeof(ResponseModel<CityResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> CreateCity(CityRequestDto cityDto)
         {
-            if (cityCreateUpdateDto.Id > 0)
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+            CityResponseDto result = await _cityRepository.CreateCity(cityDto, user);
+            var response = new ResponseModel<CityResponseDto>()
             {
-                cityCreateUpdateDto.UpdateDate = DateTime.Now;
-                cityCreateUpdateDto.UpdateBy = user;
-            }
-            else
-            {
-                cityCreateUpdateDto.CreationDate = DateTime.Now;
-                cityCreateUpdateDto.CreateBy = user;
-                cityCreateUpdateDto.UpdateDate = DateTime.Now;
-                cityCreateUpdateDto.UpdateBy = user;
-            }
-            CityDto cityDto = await _cityRepository.CreateUpdateCity(cityCreateUpdateDto);
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
+        }
 
-            return Ok(cityDto);
+        [HttpPost]
+        [Route("UpdateCity")]
+        [ProducesResponseType(typeof(ResponseModel<CityResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> UpdateCity(CityRequestDto cityDto)
+        {
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+            CityResponseDto result = await _cityRepository.UpdateCity(cityDto, user);
+            var response = new ResponseModel<CityResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
+        }
+
+        [HttpDelete]
+        [Route("DeleteCity")]
+        [ProducesResponseType(typeof(ResponseModel<string>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> DeleteCity(int id)
+        {
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+
+            bool result = await _cityRepository.DeleteCity(id, user);
+            var response = new ResponseModel<string>()
+            {
+                IsSuccess = result,
+                Messages = "",
+                Result = "",
+            };
+            return Ok(response);
         }
     }
 }

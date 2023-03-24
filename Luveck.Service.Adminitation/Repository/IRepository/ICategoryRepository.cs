@@ -1,4 +1,5 @@
-﻿using Luveck.Service.Administration.Models.Dto;
+﻿using Luveck.Service.Administration.DTO;
+using Luveck.Service.Administration.DTO.Response;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -6,9 +7,10 @@ namespace Luveck.Service.Administration.Repository.IRepository
 {
     public interface ICategoryRepository
     {
-        Task<IEnumerable<CategoryDto>> GetCategories();
-        Task<CategoryDto> GetCategory(int id);
-        Task<CategoryDto> CreateUpdateCategory(CategoryDto categoryDto);
-        Task<bool> deleteCategory(int id);
+        Task<List<CategoryResponseDto>> GetCategories();
+        Task<CategoryResponseDto> GetCategoryById(int id);
+        Task<CategoryResponseDto> GetCategoryByName(string name);
+        Task<CategoryResponseDto> CreateUpdateCategory(CategoryRequestDto categoryDto, string user);
+        Task<bool> deleteCategory(int id, string user);
     }
 }

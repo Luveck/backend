@@ -1,11 +1,16 @@
-﻿using Luveck.Service.Administration.Models.Dto;
+﻿using Luveck.Service.Administration.DTO;
+using Luveck.Service.Administration.DTO.Response;
+using Luveck.Service.Administration.Handlers;
+using Luveck.Service.Administration.Models;
 using Luveck.Service.Administration.Repository.IRepository;
+using Luveck.Service.Administration.Utils.Jwt.Interface;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
+using static Luveck.Service.Administration.Utils.enums.Enums;
 
 namespace Luveck.Service.Administration.Controllers
 {
@@ -13,84 +18,112 @@ namespace Luveck.Service.Administration.Controllers
     [Route("api/Administration")]
     [ApiController]
     [ApiExplorerSettings(GroupName = "ApiAdminCategory")]
-    [ProducesResponseType(StatusCodes.Status501NotImplemented)]
+    [TypeFilter(typeof(CustomExceptionAttribute))]
     public class CategoryController : ControllerBase
     {
         public ICategoryRepository _category;
+        private readonly IHeaderClaims _headerClaims;
 
-        public CategoryController(ICategoryRepository category)
+        public CategoryController(ICategoryRepository category, IHeaderClaims headerClaims)
         {
             _category = category;
+            _headerClaims = headerClaims;
         }
 
         [HttpGet]
         [Route("GetCategories")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(List<CategoryDto>))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ResponseModel<List<CategoryResponseDto>>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetCategories()
         {
-            var categories = await _category.GetCategories();
-            return Ok(categories);
+            List<CategoryResponseDto> result = await _category.GetCategories();
+            var response = new ResponseModel<List<CategoryResponseDto>>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpGet]
         [Route("GetCategoryById")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(CategoryDto))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetCatedoryById(int Id)
+        [ProducesResponseType(typeof(ResponseModel<CategoryResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetCategoryById(int Id)
         {
-            var category = await _category.GetCategory(Id);
-            return Ok(category);
+            CategoryResponseDto result = await _category.GetCategoryById(Id); ;
+            var response = new ResponseModel<CategoryResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
+        }
+
+        [HttpGet]
+        [Route("GetCategoryByName")]
+        [ProducesResponseType(typeof(ResponseModel<CategoryResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetCategoryByName(string name)
+        {
+            CategoryResponseDto result = await _category.GetCategoryByName(name); ;
+            var response = new ResponseModel<CategoryResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpPost]
         [Route("CreateCategory")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(CategoryDto))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CreateCategory(CategoryDto categoryDto, string user)
+        [ProducesResponseType(typeof(ResponseModel<CategoryResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> CreateCategory(CategoryRequestDto category)
         {
-            if (string.IsNullOrEmpty(user.Trim())) return BadRequest(new
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+
+            CategoryResponseDto result = await _category.CreateUpdateCategory(category, user); ;
+            var response = new ResponseModel<CategoryResponseDto>()
             {
-                message = "El usuario no puede ir vacio"
-            });
-            categoryDto.CreationDate = DateTime.Now;
-            categoryDto.CreateBy = user;
-            categoryDto.UpdateDate = DateTime.Now;
-            categoryDto.UpdateBy = user;
-            categoryDto.IsDeleted = false;
-            CategoryDto category = await _category.CreateUpdateCategory(categoryDto);
-            return Ok(category);
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
-        [HttpPut]
+        [HttpPost]
         [Route("UpdateCategory")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(CategoryDto))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdateCategory(CategoryDto categoryDto, string user)
+        [ProducesResponseType(typeof(ResponseModel<CategoryResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> UpdateCategory(CategoryRequestDto category)
         {
-            if (string.IsNullOrEmpty(user.Trim())) return BadRequest(new
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+
+            CategoryResponseDto result = await _category.CreateUpdateCategory(category, user); ;
+            var response = new ResponseModel<CategoryResponseDto>()
             {
-                message = "El usuario no puede ir vacio"
-            });
-            categoryDto.UpdateDate = DateTime.Now;
-            categoryDto.UpdateBy = user;
-            CategoryDto category = await _category.CreateUpdateCategory(categoryDto);
-            return Ok(category);
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpDelete]
         [Route("DeleteCategory")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(bool))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> DeleteCategory(int Id)
+        [ProducesResponseType(typeof(ResponseModel<string>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> DeleteCategory(int id)
         {
-            var category = await _category.deleteCategory(Id);
-            return Ok(category);
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+
+            bool result = await _category.deleteCategory(id, user); ;
+            var response = new ResponseModel<string>()
+            {
+                IsSuccess = result,
+                Messages = "",
+                Result = "",
+            };
+            return Ok(response);
         }
     }
 }

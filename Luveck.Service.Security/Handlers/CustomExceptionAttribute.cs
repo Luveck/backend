@@ -36,7 +36,7 @@ namespace Luveck.Service.Security.Handlers
                 if (context.Exception != null)
                 {
                     oResponseExeption.Status = StatusCodes.Status500InternalServerError;
-                    oResponse.Messages = GeneralMessage.Error500;
+                    oResponse.Messages = GeneralMessage.Error500 + " | " + context.Exception;
                 }
                 context.ExceptionHandled = true;
             }
@@ -48,7 +48,7 @@ namespace Luveck.Service.Security.Handlers
             };
 
             if (oResponseExeption.Status == StatusCodes.Status500InternalServerError)
-                context.HttpContext.Response.HttpContext.Features.Get<IHttpResponseFeature>().ReasonPhrase = GeneralMessage.Error500;
+                context.HttpContext.Response.HttpContext.Features.Get<IHttpResponseFeature>().ReasonPhrase = GeneralMessage.Error500 + " | " + context.Exception;
         }
     }
 }

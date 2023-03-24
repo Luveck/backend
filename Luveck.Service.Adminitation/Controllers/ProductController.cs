@@ -1,98 +1,161 @@
-﻿using Luveck.Service.Administration.Models.Dto;
+﻿using Luveck.Service.Administration.DTO;
+using Luveck.Service.Administration.DTO.Response;
+using Luveck.Service.Administration.Handlers;
+using Luveck.Service.Administration.Models;
+using Luveck.Service.Administration.Models.Dto;
 using Luveck.Service.Administration.Repository.IRepository;
+using Luveck.Service.Administration.Utils.Jwt.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
+using static Luveck.Service.Administration.Utils.enums.Enums;
 
 namespace Luveck.Service.Administration.Controllers
 {
-    [Authorize]
+    //[Authorize]
     [Route("api/Administration")]
     [ApiController]
     [ApiExplorerSettings(GroupName = "ApiAdminProduct")]
-    [ProducesResponseType(StatusCodes.Status501NotImplemented)]
+    [TypeFilter(typeof(CustomExceptionAttribute))]
     public class ProductController : ControllerBase
     {
         public IProductRepository _product;
+        private readonly IHeaderClaims _headerClaims;
 
-        public ProductController(IProductRepository productRepository)
+        public ProductController(IProductRepository productRepository, IHeaderClaims headerClaims)
         {
             _product = productRepository;
+            _headerClaims = headerClaims;
         }
 
         [HttpGet]
         [Route("GetProducts")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(List<ProductDto>))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ResponseModel<List<ProductResponseDto>>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetProducts()
         {
-            var products = await _product.GetProducts();
-            return Ok(products);
-        }
-
-        [HttpGet]
-        [Route("GetProductsById")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(ProductDto))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetProducts(int id)
-        {
-            var product = await _product.GetProduct(id);
-            return Ok(product);
+            List<ProductResponseDto> result = await _product.GetProducts();
+            var response = new ResponseModel<List<ProductResponseDto>>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpGet]
         [Route("GetProductsByCategory")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(List<ProductDto>))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ResponseModel<List<ProductResponseDto>>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetProductsByCategory(int idCategory)
         {
-            var products = await _product.GetProductsByCategory(idCategory);
-            return Ok(products);
+            List<ProductResponseDto> result = await _product.GetProductsByCategory( idCategory );
+            var response = new ResponseModel<List<ProductResponseDto>>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
+        }
+
+        [HttpGet]
+        [Route("GetProductById")]
+        [ProducesResponseType(typeof(ResponseModel<ProductResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetProductsById(int id)
+        {
+            ProductResponseDto result = await _product.GetProductById(id);
+            var response = new ResponseModel<ProductResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
+        }
+
+        [HttpGet]
+        [Route("GetProductByName")]
+        [ProducesResponseType(typeof(ResponseModel<ProductResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetProductByName(string name)
+        {
+            ProductResponseDto result = await _product.GetProductByName(name);
+            var response = new ResponseModel<ProductResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
+        }
+
+        [HttpGet]
+        [Route("GetProductByBarcode")]
+        [ProducesResponseType(typeof(ResponseModel<ProductResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetProductByBarcode(string barcode)
+        {
+            ProductResponseDto result = await _product.GetProductByBarcode(barcode);
+            var response = new ResponseModel<ProductResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpDelete]
         [Route("DeleteProduct")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(bool))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> DeleteProduct(int Id)
+        [ProducesResponseType(typeof(ResponseModel<string>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> DeleteProduct(int id)
         {
-            var product = await _product.deleteProduct(Id);
-            return Ok(product);
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+
+            bool result = await _product.deleteProduct(id, user); ;
+            var response = new ResponseModel<string>()
+            {
+                IsSuccess = result,
+                Messages = "",
+                Result = "",
+            };
+            return Ok(response);
         }
 
-        [HttpPut]
+        [HttpPost]
         [Route("UpdateProduct")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(ProductDto))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdateProduct(ProductDto productDto, string user)
+        [ProducesResponseType(typeof(ResponseModel<ProductResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> UpdateProduct( ProductRequestDto product)
         {
-            productDto.UpdateBy = user;
-            ProductDto product = await _product.CreateUpdateProduct(productDto);
-            return Ok(product);
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+
+            ProductResponseDto result = await _product.UpdateProduct(product, user);
+            var response = new ResponseModel<ProductResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpPost]
         [Route("CreateProduct")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(CategoryDto))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CreateProduct(ProductDto productDto, string user)
+        [ProducesResponseType(typeof(ResponseModel<ProductResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> CreateProduct(ProductRequestDto product)
         {
-            if(string.IsNullOrEmpty(productDto.Name) || string.IsNullOrEmpty(user))
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+
+            ProductResponseDto result = await _product.CreateProduct(product, user);
+            var response = new ResponseModel<ProductResponseDto>()
             {
-                return BadRequest("No puede enviar el nombre y/o el usuario vacio.");
-            }
-            productDto.UpdateBy = user;
-            ProductDto product = await _product.CreateUpdateProduct(productDto);
-            return Ok(product);
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
     }
 }

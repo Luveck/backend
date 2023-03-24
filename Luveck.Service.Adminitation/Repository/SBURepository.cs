@@ -19,34 +19,34 @@ namespace Luveck.Service.Administration.Repository
             _db = db;
             _mapper = mapper;
         }
-        public async Task<SBUDto> CreateUpdateSBU(SBUDto Sbu)
-        {
-            SBU sbu = _mapper.Map<SBU>(Sbu);
+        //public async Task<SBUDto> CreateUpdateSBU(SBUDto Sbu)
+        //{
+        //    SBU sbu = _mapper.Map<SBU>(Sbu);
 
-            if (sbu.Id > 0)
-            {
-                _db.SBU.Update(sbu);
-            }
-            else
-            {
-                _db.SBU.Add(sbu);
-            }
+        //    if (sbu.Id > 0)
+        //    {
+        //        _db.SBU.Update(sbu);
+        //    }
+        //    else
+        //    {
+        //        _db.SBU.Add(sbu);
+        //    }
 
-            await _db.SaveChangesAsync();
+        //    await _db.SaveChangesAsync();
 
-            return _mapper.Map<SBUDto>(sbu);
-        }
+        //    return _mapper.Map<SBUDto>(sbu);
+        //}
 
-        public async Task<SBUDto> GetSBU(int id)
-        {
-            SBU Sbu = await _db.SBU.FirstOrDefaultAsync(c => c.Id == id);
-            return _mapper.Map<SBUDto>(Sbu);            
-        }
+        //public async Task<SBUDto> GetSBU(int id)
+        //{
+        //    SBU Sbu = await _db.SBU.FirstOrDefaultAsync(c => c.Id == id);
+        //    return _mapper.Map<SBUDto>(Sbu);            
+        //}
 
-        public async Task<IEnumerable<SBUDto>> GetSBUs()
-        {
-            List<SBU> sbuList = await _db.SBU.ToListAsync();
-            return _mapper.Map<List<SBUDto>>(sbuList);            
-        }
+        //public async Task<IEnumerable<SBUDto>> GetSBUs()
+        //{
+        //    List<SBU> sbuList = await _db.SBU.ToListAsync();
+        //    return _mapper.Map<List<SBUDto>>(sbuList);            
+        //}
     }
 }

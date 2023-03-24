@@ -160,6 +160,24 @@ namespace Luveck.Service.Security.Utils.Resource {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to El role seleccionado no existe..
+        /// </summary>
+        public static string RoleNoExist {
+            get {
+                return ResourceManager.GetString("RoleNoExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Se actualizó el role..
+        /// </summary>
+        public static string RoleUpdated {
+            get {
+                return ResourceManager.GetString("RoleUpdated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Usuario registrado correctamente..
         /// </summary>
         public static string SuccesRegister {

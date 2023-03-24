@@ -7,6 +7,12 @@ using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
+using Luveck.Service.Administration.Handlers;
+using Luveck.Service.Administration.Utils.Jwt.Interface;
+using Luveck.Service.Administration.DTO.Response;
+using System.Net;
+using Luveck.Service.Administration.DTO;
+using static Luveck.Service.Administration.Utils.enums.Enums;
 
 namespace Luveck.Service.Administration.Controllers
 {
@@ -14,75 +20,109 @@ namespace Luveck.Service.Administration.Controllers
     [Route("api/Administration")]
     [ApiController]
     [ApiExplorerSettings(GroupName = "ApiAdminPatology")]
-    [ProducesResponseType(StatusCodes.Status501NotImplemented)]
+    [TypeFilter(typeof(CustomExceptionAttribute))]
     public class PatologyController : ControllerBase
     {
         public IPatologyRepository Patology;
+        private readonly IHeaderClaims _headerClaims;
 
-        public PatologyController(IPatologyRepository patology)
+        public PatologyController(IPatologyRepository patology, IHeaderClaims headerClaims)
         {
             Patology = patology;
+            _headerClaims = headerClaims;
         }
 
         [HttpGet]
         [Route("GetPatologies")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(List<PatologyDto>))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ResponseModel<List<PatologyResponseDto>>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetPatologies()
         {
-            var patologies = await Patology.GetPatologies();
-            return Ok(patologies);
+            List<PatologyResponseDto> result = await Patology.GetPatologies();
+            var response = new ResponseModel<List<PatologyResponseDto>>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpGet]
         [Route("GetPatologyById")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(PatologyDto))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ResponseModel<PatologyResponseDto>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetPatologyById(int Id)
         {
-            var category = await Patology.GetPatology(Id);
-            return Ok(category);
+            PatologyResponseDto result = await Patology.GetPatologyById(Id);
+            var response = new ResponseModel<PatologyResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
+        }
+
+        [HttpGet]
+        [Route("GetPatologyByName")]
+        [ProducesResponseType(typeof(ResponseModel<PatologyResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetPatologyByName(string name)
+        {
+            PatologyResponseDto result = await Patology.GetPatologyByName(name);
+            var response = new ResponseModel<PatologyResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpPost]
         [Route("CreatePatology")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(PatologyDto))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CreatePatology(PatologyDto patologyDto, string user)
+        [ProducesResponseType(typeof(ResponseModel<PatologyResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> CreatePatology(PatologyRequestDto patology)
         {
-            if(string.IsNullOrEmpty(user) || string.IsNullOrEmpty(patologyDto.Name))
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+            PatologyResponseDto result = await Patology.CreatePatology(patology, user);
+            var response = new ResponseModel<PatologyResponseDto>()
             {
-                return BadRequest("usuario o nombre patologia no pueden ser vacios.");
-            }
-            patologyDto.UpdateBy = user;
-            PatologyDto patology = await Patology.CreateUpdatePatology(patologyDto);
-            return Ok(patology);
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
-        [HttpPut]
+        [HttpPost]
         [Route("UpdatePatology")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(PatologyDto))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdatePatology(PatologyDto patologyDto, string user)
+        [ProducesResponseType(typeof(ResponseModel<PatologyResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> UpdatePatology(PatologyRequestDto patology)
         {
-            patologyDto.UpdateBy = user;
-            PatologyDto category = await Patology.CreateUpdatePatology(patologyDto);
-            return Ok(category);
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+            PatologyResponseDto result = await Patology.UpdatePatology(patology, user);
+            var response = new ResponseModel<PatologyResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpDelete]
         [Route("DeletePatology")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(bool))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> DeletePatology(int Id, string user)
+        [ProducesResponseType(typeof(ResponseModel<string>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> DeletePatology(int Id)
         {
-            var patology = await Patology.deletePatology(Id, user);
-            return Ok(patology);
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+            bool result = await Patology.deletePatology(Id, user);
+            var response = new ResponseModel<string>()
+            {
+                IsSuccess = result,
+                Messages = "",
+                Result = "",
+            };
+            return Ok(response);
         }
     }
 }

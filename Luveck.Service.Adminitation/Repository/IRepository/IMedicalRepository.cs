@@ -1,4 +1,5 @@
-﻿using Luveck.Service.Administration.Models.Dto;
+﻿using Luveck.Service.Administration.DTO;
+using Luveck.Service.Administration.DTO.Response;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -6,11 +7,12 @@ namespace Luveck.Service.Administration.Repository.IRepository
 {
     public interface IMedicalRepository
     {
-        Task<IEnumerable<MedicalDto>> GetMedicals();
-        Task<IEnumerable<MedicalDto>> GetMedicalByPatolgy(int idPatology);
-        Task<IEnumerable<MedicalDto>> GetMedicalByName(string name);
-        Task<MedicalDto> GetMedical(int id);
-        Task<MedicalDto> CreateUpdateMedical(MedicalDto medicalDto);
+        Task<List<MedicalResponseDto>> GetMedicals();
+        Task<List<MedicalResponseDto>> GetMedicalByPatolgy(int idPatology);
+        Task<List<MedicalResponseDto>> GetMedicalByName(string name);
+        Task<MedicalResponseDto> GetMedical(int id);
+        Task<MedicalResponseDto> CreateMedical(MedicalRequestDto medicalDto, string user);
+        Task<MedicalResponseDto> UpdateMedical(MedicalRequestDto medicalDto, string user);
         Task<bool> deleteMedical(int id, string user);
     }
 }

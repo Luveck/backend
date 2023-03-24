@@ -19,6 +19,30 @@ namespace Luveck.Service.Security.Migrations
                 .HasAnnotation("ProductVersion", "5.0.17")
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
+            modelBuilder.Entity("Luveck.Service.Security.Models.Audit", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Device")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IP")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LoginDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("userId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("userId");
+
+                    b.ToTable("Audit");
+                });
+
             modelBuilder.Entity("Luveck.Service.Security.Models.Module", b =>
                 {
                     b.Property<int>("Id")
@@ -59,6 +83,10 @@ namespace Luveck.Service.Security.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -76,17 +104,19 @@ namespace Luveck.Service.Security.Migrations
 
                     b.ToTable("AspNetRoles");
 
+                    b.HasDiscriminator<string>("Discriminator").HasValue("IdentityRole");
+
                     b.HasData(
                         new
                         {
-                            Id = "3eb638a5-b2e4-450a-b98b-c4da6b2b3b15",
+                            Id = "7f940ecf-4fe4-4038-8902-99b7160605ef",
                             ConcurrencyStamp = "0",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "06043528-9ff5-4154-9e90-4f4a83fda808",
+                            Id = "4346b1a7-2a0d-4fba-8959-d83419c25284",
                             ConcurrencyStamp = "1",
                             Name = "Cliente",
                             NormalizedName = "CLIENTE"
@@ -268,14 +298,51 @@ namespace Luveck.Service.Security.Migrations
                     b.ToTable("AspNetUserTokens");
                 });
 
+            modelBuilder.Entity("Luveck.Service.Security.Models.Role", b =>
+                {
+                    b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityRole");
+
+                    b.Property<string>("CreateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("state")
+                        .HasColumnType("bit");
+
+                    b.HasDiscriminator().HasValue("Role");
+                });
+
             modelBuilder.Entity("Luveck.Service.Security.Models.User", b =>
                 {
                     b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityUser");
+
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("BornDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LastName")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Sex")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("State")
@@ -285,6 +352,15 @@ namespace Luveck.Service.Security.Migrations
                         .HasColumnType("bit");
 
                     b.HasDiscriminator().HasValue("User");
+                });
+
+            modelBuilder.Entity("Luveck.Service.Security.Models.Audit", b =>
+                {
+                    b.HasOne("Luveck.Service.Security.Models.User", "user")
+                        .WithMany()
+                        .HasForeignKey("userId");
+
+                    b.Navigation("user");
                 });
 
             modelBuilder.Entity("Luveck.Service.Security.Models.RoleModule", b =>

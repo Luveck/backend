@@ -150,6 +150,12 @@
   <data name="RoleExist" xml:space="preserve">
     <value>El Role que desea crear ya existe</value>
   </data>
+  <data name="RoleNoExist" xml:space="preserve">
+    <value>El role seleccionado no existe.</value>
+  </data>
+  <data name="RoleUpdated" xml:space="preserve">
+    <value>Se actualizó el role.</value>
+  </data>
   <data name="SuccesRegister" xml:space="preserve">
     <value>Usuario registrado correctamente.</value>
   </data>

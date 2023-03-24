@@ -8,75 +8,154 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using Luveck.Service.Administration.UnitWork;
+using Luveck.Service.Administration.DTO.Response;
+using Luveck.Service.Administration.DTO;
+using Luveck.Service.Administration.Utils.Exceptions;
+using Luveck.Service.Administration.Utils.Resource;
+using System.Xml.Linq;
 
 namespace Luveck.Service.Administration.Repository
 {
     public class CategoryRepository : ICategoryRepository
     {
-        private readonly AppDbContext _appDbContext;
-        private IMapper _mapper;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public CategoryRepository(AppDbContext appDbContext, IMapper mapper)
+        public CategoryRepository(IUnitOfWork unitOfWork)
         {
-            _appDbContext = appDbContext;
-            _mapper = mapper;
-        }
-        public async Task<CategoryDto> CreateUpdateCategory(CategoryDto categoryDto)
-        {
-            Category category = _mapper.Map<Category>(categoryDto);
-
-            if (category.Id > 0)
-            {
-                _appDbContext.Category.Update(category);
-            }
-            else
-            {
-                _appDbContext.Category.Add(category);
-            }
-
-            await _appDbContext.SaveChangesAsync();
-
-            return _mapper.Map<CategoryDto>(category);
+            _unitOfWork = unitOfWork;
         }
 
-        public async Task<bool> deleteCategory(int id)
+        public async Task<CategoryResponseDto> CreateUpdateCategory(CategoryRequestDto categoryDto, string user)
         {
             try
             {
-                Category category = await _appDbContext.Category.FirstOrDefaultAsync(c => c.Id == id);
+                if(categoryDto.Id == 0)
+                {
+                    Category cate = new Category()
+                    {
+                        Name = categoryDto.Name,
+                        CreateBy = user,
+                        CreationDate = DateTime.Now,
+                        IsDeleted = false,
+                        UpdateBy = user,
+                        UpdateDate = DateTime.Now,
+                    };
+                    await _unitOfWork.CategoryRepository.InsertAsync(cate);
+                }
+                else
+                {
+                    var category = await _unitOfWork.CategoryRepository.Find(x => x.Id == categoryDto.Id);
+                    if(category != null)
+                    {
+                        if (!category.Name.ToUpper().Equals(categoryDto.Name.ToUpper()))
+                        {
+                            var name = await _unitOfWork.CategoryRepository.Find(x => x.Name.ToUpper().Equals(categoryDto.Name.ToUpper()));
 
-                if (category == null) return false;
+                            if (name != null) throw new BusinessException(GeneralMessage.CategoryExist);
+                        }
 
+                        category.UpdateDate = DateTime.Now;
+                        category.UpdateBy = user;
+                        category.Name = categoryDto.Name;
+                        category.IsDeleted = categoryDto.IsDeleted;
+                        
+                        _unitOfWork.CategoryRepository.Update(category);                        
+                    }
+
+                    else throw new BusinessException(GeneralMessage.CategoryNoExist);
+                }
+
+                await _unitOfWork.SaveAsync();
+
+                var cat = await _unitOfWork.CategoryRepository.Find(x => x.Name.ToLower() == categoryDto.Name.ToLower());
+
+                return new CategoryResponseDto()
+                {
+                    Name = cat.Name,
+                    CreateBy = cat.CreateBy,
+                    CreationDate = cat.CreationDate,
+                    IsDeleted = cat.IsDeleted,
+                    Id = cat.Id,
+                    UpdateBy = cat.UpdateBy,
+                    UpdateDate = cat.UpdateDate
+                };
+
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public async Task<bool> deleteCategory(int id, string user)
+        {
+            try
+            {
+                var category = await _unitOfWork.CategoryRepository.Find(x => x.Id == id);
+                if (category == null) throw new BusinessException(GeneralMessage.CategoryNoExist);
+
+                category.UpdateDate = DateTime.Now;
+                category.UpdateBy = user;
                 category.IsDeleted = true;
-                _appDbContext.Category.Update(category);
-                await _appDbContext.SaveChangesAsync();
+
+                _unitOfWork.CategoryRepository.Update(category);
+                await _unitOfWork.SaveAsync();
+
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return false;
+                throw ex;
             }
         }
 
-        public async Task<IEnumerable<CategoryDto>> GetCategories()
+        public async Task<List<CategoryResponseDto>> GetCategories()
         {
-            return await (from Category in _appDbContext.Category
-                          select (new CategoryDto
-                          {
-                              Id = Category.Id,
-                              Name = Category.Name, 
-                              IsDeleted = Category.IsDeleted,
-                              CreateBy = Category.CreateBy,
-                              CreationDate = Category.CreationDate,
-                              UpdateBy = Category.UpdateBy,
-                              UpdateDate = Category.UpdateDate
-                          })).ToListAsync();
+            List<CategoryResponseDto> lst = await _unitOfWork.CategoryRepository.AsQueryable().Select(x => new CategoryResponseDto
+            {
+                Id = x.Id,
+                CreateBy = x.CreateBy,
+                CreationDate= x.CreationDate,
+                IsDeleted = x.IsDeleted,
+                Name = x.Name,
+                UpdateBy = x.UpdateBy,
+                UpdateDate = x.UpdateDate 
+            }).ToListAsync();
+
+            return lst;
         }
 
-        public async Task<CategoryDto> GetCategory(int id)
+        public async Task<CategoryResponseDto> GetCategoryById(int id)
         {
-            Category category = await _appDbContext.Category.FirstOrDefaultAsync(c => c.Id == id);
-            return _mapper.Map<CategoryDto>(category);
+            var category = _unitOfWork.CategoryRepository.Find(x => x.Id == id).Result;
+
+            return new CategoryResponseDto()
+            {
+                Name = category.Name,
+                CreateBy = category.CreateBy,
+                CreationDate = category.CreationDate,
+                IsDeleted = category.IsDeleted,
+                Id = category.Id,
+                UpdateBy = category.UpdateBy,
+                UpdateDate = category.UpdateDate
+            };
+        }
+
+        public async Task<CategoryResponseDto> GetCategoryByName(string name)
+        {
+            var category = _unitOfWork.CategoryRepository.Find(x => x.Name.ToLower() == name.ToLower()).Result;
+
+            return new CategoryResponseDto()
+            {
+                Name = category.Name,
+                CreateBy = category.CreateBy,
+                CreationDate = category.CreationDate,
+                IsDeleted = category.IsDeleted,
+                Id = category.Id,
+                UpdateBy = category.UpdateBy,
+                UpdateDate = category.UpdateDate
+            };
         }
     }
 }

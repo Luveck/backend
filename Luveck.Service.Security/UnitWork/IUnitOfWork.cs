@@ -9,9 +9,10 @@ namespace Luveck.Service.Security.UnitWork
     {
         #region Repository
         Repository<User> UserRepository { get; }
-        Repository<IdentityRole> RoleRepository { get; }
+        Repository<Role> RoleRepository { get; }
         Repository<Module> ModuleRepository { get; }
         Repository<RoleModule> RoleModuleRepository { get; }
+        Repository<Audit> AuditRepository { get; }
         Task<int> SaveAsync();
         #endregion
     }

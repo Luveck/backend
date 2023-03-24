@@ -1,128 +1,206 @@
-﻿using AutoMapper;
-using Luveck.Service.Administration.Models;
-using Luveck.Service.Administration.Models.Dto;
-using Luveck.Service.Administration.Repository.IRepository;
+﻿using Luveck.Service.Administration.Repository.IRepository;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
-using Luveck.Service.Administration.Data;
+using Luveck.Service.Administration.DTO;
+using Luveck.Service.Administration.UnitWork;
+using Luveck.Service.Administration.DTO.Response;
+using Luveck.Service.Administration.Utils.Resource;
+using Luveck.Service.Administration.Utils.Exceptions;
+using Luveck.Service.Administration.Models;
 
 namespace Luveck.Service.Administration.Repository
 {
     public class PurchaseRepository : IPurchaseRepository
     {
-        private readonly AppDbContext _db;
-        private IMapper _mapper;
-
-        public PurchaseRepository(AppDbContext db, IMapper mapper)
+        private readonly IUnitOfWork unitOfWork;
+        public PurchaseRepository(IUnitOfWork unitOfWork)
         {
-            _db = db;
-            _mapper = mapper;
+            this.unitOfWork = unitOfWork;
         }
 
-        public async Task<PurchaseDto> CreatePurchase(PurchaseDto purchaseDto)
+        public async Task<PurshaseResponseDto> CreatePurchase(PurchaseRequestDto purchaseDto, string user)
         {
-            Purchase purchase = _mapper.Map<Purchase>(purchaseDto);
-            var pharmacy = await _db.Pharmacy.FirstOrDefaultAsync(p => p.Id == purchaseDto.PharmacyId);
-            if (pharmacy == null) return null;
-            var user = await _db.User.FirstOrDefaultAsync(u => u.UserName == purchaseDto.NameUser);
-            if(user == null) return null;
+            var purchaseExist = await unitOfWork.PurchaseRepository.Find(x => x.NoPurchase.ToUpper().Equals(purchaseDto.NoPurchase.ToUpper()));
+            if (purchaseExist != null) throw new BusinessException(GeneralMessage.PurchaseExist);
+            var pharmacyExist = await unitOfWork.PharmacyRepository.Find(x => x.Id == purchaseDto.pharmacyId);
+            if (pharmacyExist == null) throw new BusinessException(GeneralMessage.PharmacyNoExist);
 
-            purchase.UpdateDate = DateTime.Now;
-            purchase.CreationDate = DateTime.Now;
-            purchase.CreateBy = purchaseDto.CreateBy;
-            purchase.UpdateBy = purchaseDto.CreateBy;
-            purchase.Pharmacy = pharmacy;
-            purchase.user = user;
-            _db.Purchase.Add(purchase);
-            await _db.SaveChangesAsync();
- 
-            return _mapper.Map<PurchaseDto>(purchase);
+            Purchase purchase = new Purchase()
+            {
+                CreateBy = user,
+                CreationDate = DateTime.Now,
+                NoPurchase = purchaseDto.NoPurchase,
+                pharmacyId = pharmacyExist.Id,
+                UpdateBy = user,
+                UpdateDate = DateTime.Now,
+                userId = purchaseDto.userId,
+                purchaseReviewed = purchaseDto.Reviewed,
+                DateShiped = purchaseDto.DateShiped,
+            };
+
+            await unitOfWork.PurchaseRepository.InsertAsync(purchase);
+            await unitOfWork.SaveAsync();            
+
+            return await (from pur in unitOfWork.PurchaseRepository.AsQueryable()
+                          join pharma in unitOfWork.PharmacyRepository.AsQueryable() on pur.Pharmacy.Id equals pharma.Id
+                          join city in unitOfWork.CityRepository.AsQueryable() on pharma.city.Id equals city.Id
+                          where pur.Id == purchase.Id
+                          select new PurshaseResponseDto()
+                          {
+                              Id= pur.Id,
+                              Buyer = pur.userId,
+                              CityPharmacy = city.Name,
+                              CreateBy = pur.CreateBy,
+                              CreationDate = pur.CreationDate,
+                              IdCityPharmacy = city.Id, 
+                              UpdateBy = pur.UpdateBy,
+                              IdPharmacy = pharma.Id,
+                              NamePharmacy = pharma.Name,
+                              NoPurchase = pur.NoPurchase,
+                              UpdateDate = pur.UpdateDate,
+                              Reviewed = pur.purchaseReviewed,
+                              DateShiped = pur.DateShiped
+                          }).FirstOrDefaultAsync();
+        }
+        public async Task<PurshaseResponseDto> UpdatePurchase(PurchaseRequestDto purchaseDto, string user)
+        {
+            var purchaseExist = await unitOfWork.PurchaseRepository.Find(x => x.Id == purchaseDto.Id);
+            if (purchaseExist == null) throw new BusinessException(GeneralMessage.PurchaseNoExist);
+            var pharmacyExist = await unitOfWork.PharmacyRepository.Find(x => x.Id == purchaseDto.pharmacyId);
+            if (pharmacyExist == null) throw new BusinessException(GeneralMessage.PharmacyNoExist);
+
+            if (!purchaseExist.NoPurchase.ToLower().Equals(purchaseDto.NoPurchase.ToLower()))
+            {
+                var noPurchaseExist = await unitOfWork.PurchaseRepository.Find(x => x.NoPurchase.ToUpper().Equals(purchaseDto.NoPurchase.ToUpper()));
+                if (noPurchaseExist != null) throw new BusinessException(GeneralMessage.PurchaseExist);
+            }
+            purchaseExist.NoPurchase = purchaseDto.NoPurchase;
+            purchaseExist.pharmacyId = pharmacyExist.Id;
+            purchaseExist.UpdateBy = user;
+            purchaseExist.UpdateDate = DateTime.Now;
+            purchaseExist.purchaseReviewed = purchaseDto.Reviewed;
+            purchaseExist.DateShiped = purchaseDto.DateShiped;
+
+            unitOfWork.PurchaseRepository.Update(purchaseExist);
+            await unitOfWork.SaveAsync();
+
+            return await (from pur in unitOfWork.PurchaseRepository.AsQueryable()
+                          join pharma in unitOfWork.PharmacyRepository.AsQueryable() on pur.Pharmacy.Id equals pharma.Id
+                          join city in unitOfWork.CityRepository.AsQueryable() on pharma.city.Id equals city.Id
+                          where pur.Id == purchaseExist.Id
+                          select new PurshaseResponseDto()
+                          {
+                              Id = pur.Id,
+                              Buyer = pur.userId,
+                              CityPharmacy = city.Name,
+                              CreateBy = pur.CreateBy,
+                              CreationDate = pur.CreationDate,
+                              IdCityPharmacy = city.Id,
+                              UpdateBy = pur.UpdateBy,
+                              IdPharmacy = pharma.Id,
+                              NamePharmacy = pharma.Name,
+                              NoPurchase = pur.NoPurchase,
+                              UpdateDate = pur.UpdateDate,
+                              Reviewed = pur.purchaseReviewed,
+                              DateShiped = pur.DateShiped
+                          }).FirstOrDefaultAsync();
+        }
+        public async Task<List<PurshaseResponseDto>> GetPurchases()
+        {
+            return await (from pur in unitOfWork.PurchaseRepository.AsQueryable()
+                                 join pharma in unitOfWork.PharmacyRepository.AsQueryable() on pur.Pharmacy.Id equals pharma.Id
+                                 join city in unitOfWork.CityRepository.AsQueryable() on pharma.city.Id equals city.Id
+                                 select new PurshaseResponseDto()
+                                 {
+                                     Id = pur.Id,
+                                     Buyer = pur.userId,
+                                     CityPharmacy = city.Name,
+                                     CreateBy = pur.CreateBy,
+                                     CreationDate = pur.CreationDate,
+                                     IdCityPharmacy = city.Id,
+                                     UpdateBy = pur.UpdateBy,
+                                     IdPharmacy = pharma.Id,
+                                     NamePharmacy = pharma.Name,
+                                     NoPurchase = pur.NoPurchase,
+                                     UpdateDate = pur.UpdateDate,
+                                     Reviewed = pur.purchaseReviewed,
+                                     DateShiped = pur.DateShiped
+                                 }).ToListAsync();
         }
 
-        public async Task<IEnumerable<PurchaseDto>> GetPurchases()
+        public async Task<List<PurshaseResponseDto>> GetPurchaseByClientID(string userName)
         {
-            return await(from Purchase in _db.Purchase
-                         join pharmacy in _db.Pharmacy on Purchase.Pharmacy.Id equals pharmacy.Id
-                         join user in _db.User on Purchase.user.UserName equals user.UserName
-                         select (new PurchaseDto
-                         {
-                             Id = Purchase.Id,
-                             NoPurchase = Purchase.NoPurchase,
-                             PharmacyId = pharmacy.Id,
-                             PharmacyName = pharmacy.Name,
-                             CreateBy = Purchase.CreateBy,
-                             CreationDate = Purchase.CreationDate,
-                             UpdateBy = Purchase.UpdateBy,
-                             UpdateDate = Purchase.UpdateDate,
-                             NameUser = user.Name,
-                             userId = user.UserName,
-                         })).ToListAsync();
+            return await (from pur in unitOfWork.PurchaseRepository.AsQueryable()
+                          join pharma in unitOfWork.PharmacyRepository.AsQueryable() on pur.Pharmacy.Id equals pharma.Id
+                          join city in unitOfWork.CityRepository.AsQueryable() on pharma.city.Id equals city.Id
+                          where pur.userId == userName
+                          select new PurshaseResponseDto()
+                          {
+                              Id = pur.Id,
+                              Buyer = pur.userId,
+                              CityPharmacy = city.Name,
+                              CreateBy = pur.CreateBy,
+                              CreationDate = pur.CreationDate,
+                              IdCityPharmacy = city.Id,
+                              UpdateBy = pur.UpdateBy,
+                              IdPharmacy = pharma.Id,
+                              NamePharmacy = pharma.Name,
+                              NoPurchase = pur.NoPurchase,
+                              UpdateDate = pur.UpdateDate,
+                              Reviewed = pur.purchaseReviewed,
+                              DateShiped = pur.DateShiped
+                          }).ToListAsync();
         }
 
-        public async Task<IEnumerable<PurchaseDto>> GetPurchaseByClientID(string userName)
+        public async Task<PurshaseResponseDto> GetPurchaseByNoPurchase(string noPurchase)
         {
-            return await(from Purchase in _db.Purchase
-                         join pharmacy in _db.Pharmacy on Purchase.Pharmacy.Id equals pharmacy.Id
-                         join user in _db.User on Purchase.user.UserName equals user.UserName
-                         where Purchase.user.UserName == userName
-                         select (new PurchaseDto
-                         {
-                             Id = Purchase.Id,
-                             NoPurchase = Purchase.NoPurchase,
-                             PharmacyId = pharmacy.Id,
-                             PharmacyName = pharmacy.Name,
-                             CreateBy = Purchase.CreateBy,
-                             CreationDate = Purchase.CreationDate,
-                             UpdateBy = Purchase.UpdateBy,
-                             UpdateDate = Purchase.UpdateDate,
-                             NameUser = user.Name,
-                             userId = user.UserName,
-                         })).ToListAsync();
+            return await (from pur in unitOfWork.PurchaseRepository.AsQueryable()
+                          join pharma in unitOfWork.PharmacyRepository.AsQueryable() on pur.Pharmacy.Id equals pharma.Id
+                          join city in unitOfWork.CityRepository.AsQueryable() on pharma.city.Id equals city.Id
+                          where pur.NoPurchase == noPurchase
+                          select new PurshaseResponseDto()
+                          {
+                              Id = pur.Id,
+                              Buyer = pur.userId,
+                              CityPharmacy = city.Name,
+                              CreateBy = pur.CreateBy,
+                              CreationDate = pur.CreationDate,
+                              IdCityPharmacy = city.Id,
+                              UpdateBy = pur.UpdateBy,
+                              IdPharmacy = pharma.Id,
+                              NamePharmacy = pharma.Name,
+                              NoPurchase = pur.NoPurchase,
+                              UpdateDate = pur.UpdateDate,
+                              Reviewed = pur.purchaseReviewed,
+                              DateShiped = pur.DateShiped
+                          }).FirstOrDefaultAsync();
         }
 
-        public async Task<PurchaseDto> GetPurchaseByNoPurchase(string noPurchase)
+        public async Task<List<PurshaseResponseDto>> GetPurchaseByPharmacy(int idPharmacy)
         {
-            return await(from Purchase in _db.Purchase
-                         join pharmacy in _db.Pharmacy on Purchase.Pharmacy.Id equals pharmacy.Id
-                         join user in _db.User on Purchase.user.UserName equals user.UserName
-                         where Purchase.NoPurchase == noPurchase
-                         select (new PurchaseDto
-                         {
-                             Id = Purchase.Id,
-                             NoPurchase = Purchase.NoPurchase,
-                             PharmacyId = pharmacy.Id,
-                             PharmacyName = pharmacy.Name,
-                             CreateBy = Purchase.CreateBy,
-                             CreationDate = Purchase.CreationDate,
-                             UpdateBy = Purchase.UpdateBy,
-                             UpdateDate = Purchase.UpdateDate,
-                             NameUser = user.Name,
-                             userId = user.UserName,
-                         })).FirstOrDefaultAsync();
-        }
-
-        public async Task<IEnumerable<PurchaseDto>> GetPurchaseByPharmacy(int idPharmacy)
-        {
-            return await(from Purchase in _db.Purchase
-                         join pharmacy in _db.Pharmacy on Purchase.Pharmacy.Id equals pharmacy.Id 
-                         join user in _db.User on Purchase.user.UserName equals user.UserName
-                         where Purchase.Pharmacy.Id == idPharmacy
-                         select (new PurchaseDto
-                         {
-                             Id = Purchase.Id,
-                             NoPurchase = Purchase.NoPurchase,
-                             PharmacyId = pharmacy.Id,
-                             PharmacyName = pharmacy.Name,
-                             CreateBy = Purchase.CreateBy,
-                             CreationDate = Purchase.CreationDate,
-                             UpdateBy = Purchase.UpdateBy,
-                             UpdateDate = Purchase.UpdateDate,
-                             NameUser = user.Name,
-                             userId = user.UserName,
-                         })).ToListAsync();
+            return await (from pur in unitOfWork.PurchaseRepository.AsQueryable()
+                          join pharma in unitOfWork.PharmacyRepository.AsQueryable() on pur.Pharmacy.Id equals pharma.Id
+                          join city in unitOfWork.CityRepository.AsQueryable() on pharma.city.Id equals city.Id
+                          where pur.pharmacyId == idPharmacy
+                          select new PurshaseResponseDto()
+                          {
+                              Id = pur.Id,
+                              Buyer = pur.userId,
+                              CityPharmacy = city.Name,
+                              CreateBy = pur.CreateBy,
+                              CreationDate = pur.CreationDate,
+                              IdCityPharmacy = city.Id,
+                              UpdateBy = pur.UpdateBy,
+                              IdPharmacy = pharma.Id,
+                              NamePharmacy = pharma.Name,
+                              NoPurchase = pur.NoPurchase,
+                              UpdateDate = pur.UpdateDate,
+                              Reviewed = pur.purchaseReviewed,
+                              DateShiped = pur.DateShiped
+                          }).ToListAsync();
         }
     }
 }

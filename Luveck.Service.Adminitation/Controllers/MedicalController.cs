@@ -1,12 +1,15 @@
-﻿using Luveck.Service.Administration.Models.Dto;
-using Luveck.Service.Administration.Repository.IRepository;
+﻿using Luveck.Service.Administration.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System;
+using Luveck.Service.Administration.Handlers;
+using Luveck.Service.Administration.Utils.Jwt.Interface;
+using Luveck.Service.Administration.DTO.Response;
+using System.Net;
 using Luveck.Service.Administration.Models;
+using Luveck.Service.Administration.DTO;
+using static Luveck.Service.Administration.Utils.enums.Enums;
 
 namespace Luveck.Service.Administration.Controllers
 {
@@ -14,95 +17,124 @@ namespace Luveck.Service.Administration.Controllers
     [Route("api/Medical")]
     [ApiController]
     [ApiExplorerSettings(GroupName = "ApiAdminMedical")]
-    [ProducesResponseType(StatusCodes.Status501NotImplemented)]
+    [TypeFilter(typeof(CustomExceptionAttribute))]
     public class MedicalController : ControllerBase
     {
         public IMedicalRepository _medical;
+        private readonly IHeaderClaims _headerClaims;
 
-        public MedicalController(IMedicalRepository medical)
+        public MedicalController(IMedicalRepository medical, IHeaderClaims headerClaims)
         {
             _medical = medical;
+            _headerClaims= headerClaims;
         }
 
         [HttpGet]
         [Route("GetMedicals")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(List<MedicalDto>))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ResponseModel<List<MedicalResponseDto>>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetMedicals()
         {
-            var medicals = await _medical.GetMedicals();
-            return Ok(medicals);
+            List<MedicalResponseDto> result = await _medical.GetMedicals();
+            var response = new ResponseModel<List<MedicalResponseDto>>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpGet]
         [Route("GetMedicalByPatolgy")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(List<MedicalDto>))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ResponseModel<List<MedicalResponseDto>>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetMedicalByPatolgy(int idPatology)
         {
-            var medicals = await _medical.GetMedicalByPatolgy(idPatology);
-            return Ok(medicals);
+            List<MedicalResponseDto> result = await _medical.GetMedicalByPatolgy(idPatology);
+            var response = new ResponseModel<List<MedicalResponseDto>>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpGet]
-        [Route("GetMedicalByName")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(List<MedicalDto>))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetMedicalByName(string nameMedical)
+        [Route("GetMedicalsByName")]
+        [ProducesResponseType(typeof(ResponseModel<List<MedicalResponseDto>>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetMedicalByName(string nameMedicaly)
         {
-            var medicals = await _medical.GetMedicalByName(nameMedical);
-            return Ok(medicals);
+            List<MedicalResponseDto> result = await _medical.GetMedicalByName(nameMedicaly);
+            var response = new ResponseModel<List<MedicalResponseDto>>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpGet]
-        [Route("GetMedical")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(MedicalDto))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetMedical(int id)
+        [Route("GetMedicalById")]
+        [ProducesResponseType(typeof(ResponseModel<MedicalResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetMedicalById(int id)
         {
-            var medical = await _medical.GetMedical(id);
-            return Ok(medical);
+            MedicalResponseDto result = await _medical.GetMedical(id);
+            var response = new ResponseModel<MedicalResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpPost]
         [Route("CreateMedical")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(MedicalDto))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> CreateMedical(MedicalDto medicalDto)
+        [ProducesResponseType(typeof(ResponseModel<MedicalResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> CreateMedical(MedicalRequestDto requestDto)
         {
-            medicalDto.UpdateDate = DateTime.Now;
-            medicalDto.CreationDate = DateTime.Now;
-            var medical = await _medical.CreateUpdateMedical(medicalDto);
-            return Ok(medical);
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+            MedicalResponseDto result = await _medical.CreateMedical(requestDto, user);
+            var response = new ResponseModel<MedicalResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
-        [HttpPut]
+        [HttpPost]
         [Route("UpdateMedical")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(MedicalDto))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdateMedical(MedicalDto medicalDto)
+        [ProducesResponseType(typeof(ResponseModel<MedicalResponseDto>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> UpdateMedical(MedicalRequestDto requestDto)
         {
-            medicalDto.UpdateDate = DateTime.Now;
-            medicalDto.CreationDate = DateTime.Now;
-            var medical = await _medical.CreateUpdateMedical(medicalDto);
-            return Ok(medical);
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+            MedicalResponseDto result = await _medical.UpdateMedical(requestDto, user);
+            var response = new ResponseModel<MedicalResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result,
+            };
+            return Ok(response);
         }
 
         [HttpDelete]
         [Route("DeleteMedical")]
-        [AllowAnonymous]
-        [ProducesResponseType(200, Type = typeof(bool))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> DeleteMedical(int Id, string user)
+        [ProducesResponseType(typeof(ResponseModel<string>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> DeleteMedical(int Id)
         {
-            var medical = await _medical.deleteMedical(Id, user);
-            return Ok(medical);
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+            bool result = await _medical.deleteMedical(Id, user);
+            var response = new ResponseModel<string>()
+            {
+                IsSuccess = result,
+                Messages = "",
+                Result = "",
+            };
+            return Ok(response);
         }
     }
 }

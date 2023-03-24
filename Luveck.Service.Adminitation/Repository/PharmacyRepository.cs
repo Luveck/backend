@@ -1,150 +1,228 @@
-﻿using AutoMapper;
-using Luveck.Service.Administration.Data;
-using Luveck.Service.Administration.Models;
-using Luveck.Service.Administration.Models.Dto;
+﻿using Luveck.Service.Administration.Models;
 using Luveck.Service.Administration.Repository.IRepository;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
-using System.Xml.Linq;
 using System;
+using Luveck.Service.Administration.UnitWork;
+using Luveck.Service.Administration.DTO.Response;
+using Luveck.Service.Administration.Utils.Exceptions;
+using Luveck.Service.Administration.Utils.Resource;
+using Luveck.Service.Administration.DTO;
 
 namespace Luveck.Service.Administration.Repository
 {
     public class PharmacyRepository : IPharmacyRepository
     {
-        public AppDbContext _db;
-        public IMapper _mapper;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public PharmacyRepository(AppDbContext db, IMapper mapper)
+        public PharmacyRepository(IUnitOfWork unitOfWork)
         {
-            _db = db;
-            _mapper = mapper;
+            _unitOfWork= unitOfWork;
         }
 
-        public async Task<PharmacyDto> CreateUpdatePharmacy(PharmacyDto pharmacyDto)
+        public async Task<PharmacyResponseDto> UpdatePharmacy(PharmacyRequestDto pharmacyDto, string user)
         {
-            Pharmacy pharmacy = _mapper.Map<Pharmacy>(pharmacyDto);
-
-            if(pharmacy.Id > 0)
+            Pharmacy pharmacy;
+            try
             {
-                pharmacy.UpdateDate = DateTime.Now;
-                _db.Pharmacy.Update(pharmacy);
-            }
-            else
-            {
-                var city = await _db.City.FirstOrDefaultAsync(c => c.Id == pharmacyDto.cityId);
-                if (city == null) return null;
+                pharmacy = await _unitOfWork.PharmacyRepository.FirstOrDefaultNoTracking(x => x.Id == pharmacyDto.Id);
+                if (pharmacy == null) throw new BusinessException(GeneralMessage.PharmacyNoExist);
+                City city = await _unitOfWork.CityRepository.FirstOrDefaultNoTracking(x => x.Id == pharmacyDto.cityId);
+                if (city == null) throw new BusinessException(GeneralMessage.CityNoExist);
+
+                if (!pharmacy.Name.ToLower().Equals(pharmacyDto.Name.ToLower()))
+                {
+                    var pharmacyExist = await _unitOfWork.PharmacyRepository.FirstOrDefaultNoTracking(x => x.Name.ToUpper().Equals(pharmacyDto.Name));
+                    if (pharmacyExist != null) throw new BusinessException(GeneralMessage.PharmacyExist);
+                }
 
                 pharmacy.UpdateDate = DateTime.Now;
-                pharmacy.CreationDate = DateTime.Now;
-                pharmacy.CreateBy = pharmacy.UpdateBy;
+                pharmacy.UpdateBy = user;
+                pharmacy.Adress = pharmacyDto.Adress;
+                pharmacy.Name = pharmacyDto.Name;
+                pharmacy.IsDeleted = pharmacyDto.IsDeleted;
                 pharmacy.city = city;
-                _db.Pharmacy.Add(pharmacy);
+
+                _unitOfWork.PharmacyRepository.Update(pharmacy);
+                await _unitOfWork.SaveAsync();
+
+                return await (from ph in _unitOfWork.PharmacyRepository.AsQueryable()
+                              join cit in _unitOfWork.CityRepository.AsQueryable() on ph.city.Id equals cit.Id
+                              where ph.Id == pharmacy.Id
+                              select new PharmacyResponseDto()
+                              {
+                                  Adress = ph.Adress,
+                                  cityId = ph.city.Id,
+                                  city = cit.Name,
+                                  CreateBy = ph.CreateBy,
+                                  CreationDate = ph.CreationDate,
+                                  Id = ph.Id,
+                                  IsDeleted = ph.IsDeleted,
+                                  Name = ph.Name,
+                                  UpdateBy = ph.UpdateBy,
+                                  UpdateDate = ph.UpdateDate
+                              }).FirstOrDefaultAsync();
+
             }
-            await _db.SaveChangesAsync();
-            return _mapper.Map<PharmacyDto>(pharmacy);
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        public async Task<PharmacyResponseDto> CreatePharmacy(PharmacyRequestDto pharmacyDto, string user)
+        {
+            Pharmacy pharmacy;
+            try
+            {
+                pharmacy = await _unitOfWork.PharmacyRepository.FirstOrDefaultNoTracking(x => x.Name.ToUpper() == pharmacyDto.Name.ToUpper());
+                if (pharmacy != null) throw new BusinessException(GeneralMessage.PharmacyExist);
+                City city = await _unitOfWork.CityRepository.FirstOrDefaultNoTracking(x => x.Id == pharmacyDto.cityId);
+                if (city == null) throw new BusinessException(GeneralMessage.CityNoExist);
+
+                pharmacy = new Pharmacy();
+                pharmacy.UpdateDate = DateTime.Now;
+                pharmacy.UpdateBy = user;
+                pharmacy.CreationDate = DateTime.Now;
+                pharmacy.CreateBy = user;
+                pharmacy.Adress = pharmacyDto.Adress;
+                pharmacy.Name = pharmacyDto.Name;
+                pharmacy.IsDeleted = false;
+                pharmacy.cityId = city.Id;
+
+                await _unitOfWork.PharmacyRepository.InsertAsync(pharmacy);
+                await _unitOfWork.SaveAsync();
+
+                return await (from ph in _unitOfWork.PharmacyRepository.AsQueryable()
+                              join cit in _unitOfWork.CityRepository.AsQueryable() on ph.city.Id equals cit.Id
+                              where ph.Name.ToUpper().Equals(pharmacyDto.Name.ToUpper())
+                              select new PharmacyResponseDto()
+                              {
+                                  Adress = ph.Adress,
+                                  cityId = ph.city.Id,
+                                  city = cit.Name,
+                                  CreateBy = ph.CreateBy,
+                                  CreationDate = ph.CreationDate,
+                                  Id = ph.Id,
+                                  IsDeleted = ph.IsDeleted,
+                                  Name = ph.Name,
+                                  UpdateBy = ph.UpdateBy,
+                                  UpdateDate = ph.UpdateDate
+                              }).FirstOrDefaultAsync();
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
 
         public async Task<bool> deletePharmacy(int id, string user)
         {
             try
             {
-                Pharmacy pharmacy = await _db.Pharmacy.FirstOrDefaultAsync(c => c.Id == id);
+                Pharmacy pharmacy = await _unitOfWork.PharmacyRepository.FirstOrDefaultNoTracking(x => x.Id == id);
 
-                if (pharmacy == null) return false;
+                if (pharmacy == null) throw new BusinessException(GeneralMessage.PharmacyNoExist);
 
                 pharmacy.IsDeleted = true;
                 pharmacy.UpdateDate = DateTime.Now;
                 pharmacy.UpdateBy = user;
-                _db.Pharmacy.Update(pharmacy);
-                await _db.SaveChangesAsync();
+
+                _unitOfWork.PharmacyRepository.Update(pharmacy);
+                await _unitOfWork.SaveAsync();
+ 
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return false;
+                throw ex;
             }
         }
 
-        public async Task<IEnumerable<PharmacyDto>> GetPharmacies()
+        public async Task<List<PharmacyResponseDto>> GetPharmacies()
         {
-            return await(from pharmacy in _db.Pharmacy
-                         join city in _db.City on pharmacy.city.Id equals city.Id
-                         select (new PharmacyDto
-                         {
-                             Id = pharmacy.Id,
-                             Name = pharmacy.Name,
-                             Adress = pharmacy.Adress,
-                             CreationDate = pharmacy.CreationDate,
-                             CreateBy = pharmacy.CreateBy,
-                             UpdateDate = pharmacy.UpdateDate,
-                             UpdateBy = pharmacy.UpdateBy,
-                             IsDeleted = pharmacy.IsDeleted,
-                             cityId = city.Id,
-                             cityName = city.Name
-                         })).ToListAsync();
+            List<PharmacyResponseDto> lst = await (from pharmacy in _unitOfWork.PharmacyRepository.AsQueryable()
+                                                   join city in _unitOfWork.CityRepository.AsQueryable() on pharmacy.city.Id equals city.Id
+                                                   select new PharmacyResponseDto()
+                                                   {
+                                                       Name = pharmacy.Name,
+                                                       Adress = pharmacy.Adress,
+                                                       cityId = city.Id,
+                                                       CreateBy = pharmacy.CreateBy,
+                                                       CreationDate = pharmacy.CreationDate,
+                                                       IsDeleted = pharmacy.IsDeleted,
+                                                       Id = pharmacy.Id,
+                                                       city = city.Name,
+                                                       UpdateBy = pharmacy.UpdateBy,
+                                                       UpdateDate = pharmacy.UpdateDate
+                                                   }).ToListAsync();
+
+            return lst;
         }
 
-        public async Task<IEnumerable<PharmacyDto>> GetPharmaciesByCity(int idCity)
+        public async Task<List<PharmacyResponseDto>> GetPharmaciesByCity(int idCity)
         {
-            return await(from pharmacy in _db.Pharmacy
-                         join city in _db.City on pharmacy.city.Id equals city.Id
-                         where pharmacy.city.Id == idCity
-                         select (new PharmacyDto
-                         {
-                             Id = pharmacy.Id,
-                             Name = pharmacy.Name,
-                             Adress = pharmacy.Adress,
-                             CreationDate = pharmacy.CreationDate,
-                             CreateBy = pharmacy.CreateBy,
-                             UpdateDate = pharmacy.UpdateDate,
-                             UpdateBy = pharmacy.UpdateBy,
-                             IsDeleted = pharmacy.IsDeleted,
-                             cityId = city.Id,
-                             cityName = city.Name
-                         })).ToListAsync();
+            List<PharmacyResponseDto> lst = await (from pharmacy in _unitOfWork.PharmacyRepository.AsQueryable()
+                                                   join city in _unitOfWork.CityRepository.AsQueryable() on pharmacy.city.Id equals city.Id
+                                                   where pharmacy.city.Id == idCity
+                                                   select new PharmacyResponseDto()
+                                                   {
+                                                       Name = pharmacy.Name,
+                                                       Adress = pharmacy.Adress,
+                                                       cityId = city.Id,
+                                                       CreateBy = pharmacy.CreateBy,
+                                                       CreationDate = pharmacy.CreationDate,
+                                                       IsDeleted = pharmacy.IsDeleted,
+                                                       Id = pharmacy.Id,
+                                                       city = city.Name,
+                                                       UpdateBy = pharmacy.UpdateBy,
+                                                       UpdateDate = pharmacy.UpdateDate
+                                                   }).ToListAsync();
+
+            return lst;
         }
 
-        public async Task<IEnumerable<PharmacyDto>> GetPharmaciesByName(string name)
+        public async Task<List<PharmacyResponseDto>> GetPharmaciesByName(string name)
         {
-            return await(from pharmacy in _db.Pharmacy
-                         join city in _db.City on pharmacy.city.Id equals city.Id
-                         where pharmacy.Name.Contains(name) 
-                         select (new PharmacyDto
-                         {
-                             Id = pharmacy.Id,
-                             Name = pharmacy.Name,
-                             Adress = pharmacy.Adress,
-                             CreationDate = pharmacy.CreationDate,
-                             CreateBy = pharmacy.CreateBy,
-                             UpdateDate = pharmacy.UpdateDate,
-                             UpdateBy = pharmacy.UpdateBy,
-                             IsDeleted = pharmacy.IsDeleted,
-                             cityId = city.Id,
-                             cityName = city.Name
-                         })).ToListAsync();
+            List<PharmacyResponseDto> lst = await (from pharmacy in _unitOfWork.PharmacyRepository.AsQueryable()
+                                                   join city in _unitOfWork.CityRepository.AsQueryable() on pharmacy.city.Id equals city.Id
+                                                   where pharmacy.Name.ToLower().Contains(name.ToLower())
+                                                   select new PharmacyResponseDto()
+                                                   {
+                                                       Name= pharmacy.Name,
+                                                       Adress = pharmacy.Adress,
+                                                       cityId= city.Id,
+                                                       CreateBy= pharmacy.CreateBy,
+                                                       CreationDate= pharmacy.CreationDate,
+                                                       IsDeleted= pharmacy.IsDeleted,
+                                                       Id = pharmacy.Id,
+                                                       city = city.Name,
+                                                       UpdateBy = pharmacy.UpdateBy,
+                                                       UpdateDate = pharmacy.UpdateDate
+                                                   }).ToListAsync();
+
+            return lst;
         }
 
-        public async Task<PharmacyDto> GetPharmacy(int id)
+        public async Task<PharmacyResponseDto> GetPharmacy(int id)
         {
-            return await(from pharmacy in _db.Pharmacy
-                         join city in _db.City on pharmacy.city.Id equals city.Id
-                         where pharmacy.Id == id
-                         select (new PharmacyDto
-                         {
-                             Id = pharmacy.Id,
-                             Name = pharmacy.Name,
-                             Adress = pharmacy.Adress,
-                             CreationDate = pharmacy.CreationDate,
-                             CreateBy = pharmacy.CreateBy,
-                             UpdateDate = pharmacy.UpdateDate,
-                             UpdateBy = pharmacy.UpdateBy,
-                             IsDeleted = pharmacy.IsDeleted,
-                             cityId = city.Id,
-                             cityName = city.Name
-                         })).FirstOrDefaultAsync();
+            return await (from pharmacy in _unitOfWork.PharmacyRepository.AsQueryable()
+                          join city in _unitOfWork.CityRepository.AsQueryable() on pharmacy.city.Id equals city.Id
+                          where pharmacy.Id == id
+                          select new PharmacyResponseDto()
+                          {
+                              Name = pharmacy.Name,
+                              Adress = pharmacy.Adress,
+                              cityId = city.Id,
+                              CreateBy = pharmacy.CreateBy,
+                              CreationDate = pharmacy.CreationDate,
+                              IsDeleted = pharmacy.IsDeleted,
+                              Id = pharmacy.Id,
+                              city = city.Name,
+                              UpdateBy = pharmacy.UpdateBy,
+                              UpdateDate = pharmacy.UpdateDate
+                          }).FirstOrDefaultAsync();
         }
     }
 }

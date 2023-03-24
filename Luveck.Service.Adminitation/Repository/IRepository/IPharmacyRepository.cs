@@ -1,4 +1,5 @@
-﻿using Luveck.Service.Administration.Models.Dto;
+﻿using Luveck.Service.Administration.DTO;
+using Luveck.Service.Administration.DTO.Response;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -6,11 +7,12 @@ namespace Luveck.Service.Administration.Repository.IRepository
 {
     public interface IPharmacyRepository
     {
-        Task<IEnumerable<PharmacyDto>> GetPharmacies();
-        Task<IEnumerable<PharmacyDto>> GetPharmaciesByCity(int idCity);
-        Task<IEnumerable<PharmacyDto>> GetPharmaciesByName(string name);
-        Task<PharmacyDto> GetPharmacy(int id);
-        Task<PharmacyDto> CreateUpdatePharmacy(PharmacyDto pharmacyDto);
+        Task<List<PharmacyResponseDto>> GetPharmacies();
+        Task<List<PharmacyResponseDto>> GetPharmaciesByCity(int idCity);
+        Task<List<PharmacyResponseDto>> GetPharmaciesByName(string name);
+        Task<PharmacyResponseDto> GetPharmacy(int id);
+        Task<PharmacyResponseDto> UpdatePharmacy(PharmacyRequestDto pharmacyDto, string user);
+        Task<PharmacyResponseDto> CreatePharmacy(PharmacyRequestDto pharmacyDto, string user);
         Task<bool> deletePharmacy(int id, string user);
     }
 }

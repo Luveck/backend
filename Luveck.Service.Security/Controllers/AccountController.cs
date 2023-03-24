@@ -6,6 +6,7 @@ using Luveck.Service.Security.Repository.IRepository;
 using Luveck.Service.Security.Utils.Jwt.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using static Luveck.Service.Security.Utils.enums.Enums;
@@ -66,9 +67,10 @@ namespace Luveck.Service.Security.Controllers
         [HttpPost]
         [Authorize]
         [ProducesResponseType((int)HttpStatusCode.OK)]
-        public async Task<IActionResult> CreateUser(RegisterUserRequestDto requestUser, string role)
+        public async Task<IActionResult> CreateUser(RegisterUserRequestDto requestUser)
         {
-            var token = await autenticationServices.Createuser(requestUser, role);
+            string user = this.headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+            var token = await autenticationServices.Createuser(requestUser, user);
 
             var response = new ResponseModel<RegisterUserResponseDto>()
             {
@@ -129,12 +131,46 @@ namespace Luveck.Service.Security.Controllers
             return Ok(response);
         }
 
-        [Route("getUser")]
+        [Route("getUserByEmail")]
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> getUser(string Email)
+        public async Task<IActionResult> getUserByEmal(string Email)
         {
-            var token = await autenticationServices.getUser(Email);
+            var token = await autenticationServices.getUserByEmail(Email);
+
+            var response = new ResponseModel<UserResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = token
+
+            };
+            return Ok(response);
+        }
+
+        [Route("getUserByDNI")]
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> getUserByDNI(string DNI)
+        {
+            var token = await autenticationServices.getUserByDNI(DNI);
+
+            var response = new ResponseModel<UserResponseDto>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = token
+
+            };
+            return Ok(response);
+        }
+
+        [Route("getUserByID")]
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> getUserByID(string Id)
+        {
+            var token = await autenticationServices.getUserById(Id);
 
             var response = new ResponseModel<UserResponseDto>()
             {
@@ -149,10 +185,10 @@ namespace Luveck.Service.Security.Controllers
         [Route("UpdateUser")]
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> UpdateUser(RegisterUserRequestDto user, string role)
+        public async Task<IActionResult> UpdateUser(RegisterUserRequestDto user)
         {
             string roleRequestor = this.headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.Role);
-            var token = await autenticationServices.updateUser(user, role, roleRequestor);
+            var token = await autenticationServices.updateUser(user, roleRequestor);
 
             var response = new ResponseModel<RegisterUserResponseDto>()
             {
@@ -162,6 +198,32 @@ namespace Luveck.Service.Security.Controllers
 
             };
             return Ok(response);
+        }
+
+        [Route("GetUsers")]
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetUsers()
+        {
+            var result = await autenticationServices.getUsers();
+
+            var response = new ResponseModel<List<UserListResponseDto>>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = result
+
+            };
+            return Ok(response);
+        }
+
+        [Route("SendMail")]
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> SendMail(string user)
+        {
+            var result = await autenticationServices.sendMail(user);
+            return Ok(result);
         }
 
         ////[HttpPost]

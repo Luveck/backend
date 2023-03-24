@@ -16,6 +16,7 @@ namespace Luveck.Service.Administration.Models
         public string UpdateBy { get; set; }
         public DateTime UpdateDate { get; set; }
         [ForeignKey("patologyId")]
+        public int patologyId { get; set; }
         public Patology patology { get; set; }
     }
 }

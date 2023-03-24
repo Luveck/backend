@@ -25,9 +25,10 @@ namespace Luveck.Service.Security.UnitWork
 
         #region Repository
         private Repository<User> userRepository;
-        private Repository<IdentityRole> roleRepository;
+        private Repository<Role> roleRepository;
         private Repository<Module> moduleRepository;
         private Repository<RoleModule> roleModuleRepository;
+        private Repository<Audit> auditRepository;
         public Repository<User> UserRepository
         {
             get
@@ -40,13 +41,13 @@ namespace Luveck.Service.Security.UnitWork
                 return this.userRepository;
             }
         }
-        public Repository<IdentityRole> RoleRepository
+        public Repository<Role> RoleRepository
         {
             get
             {
                 if (roleRepository == null)
                 {
-                    roleRepository = new Repository<IdentityRole>(_contextSQL);
+                    roleRepository = new Repository<Role>(_contextSQL);
                 }
 
                 return roleRepository;
@@ -74,6 +75,18 @@ namespace Luveck.Service.Security.UnitWork
                 }
 
                 return roleModuleRepository;
+            }
+        }
+        public Repository<Audit> AuditRepository
+        {
+            get
+            {
+                if (auditRepository == null)
+                {
+                    auditRepository = new Repository<Audit>(_contextSQL);
+                }
+
+                return auditRepository;
             }
         }
         #endregion 

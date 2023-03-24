@@ -8,81 +8,170 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using Luveck.Service.Administration.UnitWork;
+using Luveck.Service.Administration.DTO.Response;
+using Luveck.Service.Administration.DTO;
+using Luveck.Service.Administration.Utils.Exceptions;
+using Luveck.Service.Administration.Utils.Resource;
 
 namespace Luveck.Service.Administration.Repository
 {
     public class PatologyRepository : IPatologyRepository
     {
-        private readonly AppDbContext _db;
-        private IMapper _mapper;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public PatologyRepository(IMapper mapper, AppDbContext appDbContext)
+        public PatologyRepository(IUnitOfWork unitOfWork)
         {
-            _db = appDbContext;
-            _mapper = mapper;
+            _unitOfWork = unitOfWork;
         }
-        public async Task<PatologyDto> CreateUpdatePatology(PatologyDto patologyDto)
-        {
-            Patology patology = _mapper.Map<Patology>(patologyDto);
-            patology.UpdateDate = DateTime.Now;
-            patology.UpdateBy = patologyDto.UpdateBy;
 
-            if (patology.Id > 0)
-            {                                
-                _db.Patology.Update(patology);
-            }
-            else
+        public async Task<PatologyResponseDto> CreatePatology(PatologyRequestDto patologyDto, string user)
+        {
+            try
             {
-                var p = _db.Patology.FirstOrDefaultAsync(x => x.Name == patologyDto.Name);
-                if (p != null) return _mapper.Map<PatologyDto>(p);
-                patology.CreationDate = DateTime.Now;
-                patology.CreateBy = patology.UpdateBy;
-                _db.Patology.Add(patology);
+                var patology = await _unitOfWork.PatologyRepository.Find(x => x.Name.ToUpper().Equals(patologyDto.Name.ToUpper()));
+                if (patology != null) throw new BusinessException(GeneralMessage.PatologyExist);
+
+                Patology patologyNew = new Patology()
+                {
+                    Name = patologyDto.Name,
+                    CreateBy = user,
+                    CreationDate = DateTime.Now,
+                    IsDeleted = false,
+                    UpdateBy = user,
+                    UpdateDate = DateTime.Now,
+                };
+
+                await _unitOfWork.PatologyRepository.InsertAsync(patologyNew);
+
+                await _unitOfWork.SaveAsync();
+
+                patology = await _unitOfWork.PatologyRepository.Find(x => x.Name.ToLower().Equals(patologyDto.Name.ToLower()));
+
+                return new PatologyResponseDto()
+                {
+                    Name = patology.Name,
+                    CreateBy = patology.CreateBy, 
+                    CreationDate = patology.CreationDate,
+                    Id = patology.Id,
+                    isDeleted = patology.IsDeleted,
+                    UpdateBy = patology.UpdateBy,
+                    UpdateDate = patology.UpdateDate,
+                };
             }
-            await _db.SaveChangesAsync();
-            return _mapper.Map<PatologyDto>(patology);
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        public async Task<PatologyResponseDto> UpdatePatology(PatologyRequestDto patologyDto, string user)
+        {
+            try
+            {
+                var patology = await _unitOfWork.PatologyRepository.Find(x => x.Id == patologyDto.Id);
+                if (patology == null) throw new BusinessException(GeneralMessage.PatologyNoExist);
+
+                if (!patology.Name.ToUpper().Equals(patologyDto.Name.ToUpper()))
+                {
+                    var pat= await _unitOfWork.PatologyRepository.Find(x => x.Name.ToUpper().Equals(patologyDto.Name.ToUpper()));
+                    if (pat != null) throw new BusinessException(GeneralMessage.PatologyExist);
+                }
+                patology.UpdateDate = DateTime.Now;
+                patology.UpdateBy = user;
+                patology.IsDeleted = patologyDto.isDeleted;
+                patology.Name = patologyDto.Name;
+
+                _unitOfWork.PatologyRepository.Update(patology);                
+
+                await _unitOfWork.SaveAsync();
+
+                patology = await _unitOfWork.PatologyRepository.Find(x => x.Name.ToLower() == patologyDto.Name.ToLower());
+
+                return new PatologyResponseDto()
+                {
+                    Name = patology.Name,
+                    CreateBy = patology.CreateBy,
+                    CreationDate = patology.CreationDate,
+                    Id = patology.Id,
+                    isDeleted = patology.IsDeleted,
+                    UpdateBy = patology.UpdateBy,
+                    UpdateDate = patology.UpdateDate,
+                };
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
 
         public async Task<bool> deletePatology(int id, string user)
         {
             try
             {
-                Patology patology = await _db.Patology.FirstOrDefaultAsync(c => c.Id == id);
+                var patology = await _unitOfWork.PatologyRepository.Find(x => x.Id == id);
+                if (patology == null) throw new BusinessException(GeneralMessage.PatologyNoExist);
 
-                if (patology == null) return false;
-
-                patology.IsDeleted = true;
                 patology.UpdateDate = DateTime.Now;
                 patology.UpdateBy = user;
-                _db.Patology.Update(patology);
-                await _db.SaveChangesAsync();
+                patology.IsDeleted = true;
+
+                _unitOfWork.PatologyRepository.Update(patology);
+                await _unitOfWork.SaveAsync();
+
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return false;
+                throw ex;
             }
         }
 
-        public async Task<IEnumerable<PatologyDto>> GetPatologies()
+        public async Task<List<PatologyResponseDto>> GetPatologies()
         {
-            return await(from Patology in _db.Patology
-                         select (new PatologyDto
-                         {
-                             Id = Patology.Id,
-                             Name = Patology.Name,
-                             isDeleted = Patology.IsDeleted,
-                             CreateBy = Patology.CreateBy,
-                             CreationDate = Patology.CreationDate,
-                             UpdateBy = Patology.UpdateBy,
-                             UpdateDate = Patology.UpdateDate
-                         })).ToListAsync();
+            List<PatologyResponseDto> lst = await _unitOfWork.PatologyRepository.AsQueryable().Select(x => new PatologyResponseDto
+            {
+                CreateBy= x.CreateBy,
+                CreationDate= DateTime.Now,
+                Id= x.Id,
+                isDeleted= x.IsDeleted,
+                Name= x.Name,
+                UpdateBy = x.UpdateBy,
+                UpdateDate = x.UpdateDate
+            }).ToListAsync();
+
+            return lst;
         }
 
-        public async Task<PatologyDto> GetPatology(int id)
+        public async Task<PatologyResponseDto> GetPatologyById(int id)
         {
-            Patology patology= await _db.Patology.FirstOrDefaultAsync(c => c.Id == id);
-            return _mapper.Map<PatologyDto>(patology);
+            var patology = await _unitOfWork.PatologyRepository.Find(x => x.Id == id);
+
+            return new PatologyResponseDto()
+            {
+                Name = patology.Name,
+                CreateBy = patology.CreateBy,
+                CreationDate = patology.CreationDate,
+                Id = patology.Id,
+                isDeleted = patology.IsDeleted,
+                UpdateBy = patology.UpdateBy,
+                UpdateDate = patology.UpdateDate,
+            };
+        }
+
+        public async Task<PatologyResponseDto> GetPatologyByName(string name)
+        {
+            var patology = await _unitOfWork.PatologyRepository.Find(x => x.Name.ToLower() == name.ToLower());
+
+            return new PatologyResponseDto()
+            {
+                Name = patology.Name,
+                CreateBy = patology.CreateBy,
+                CreationDate = patology.CreationDate,
+                Id = patology.Id,
+                isDeleted = patology.IsDeleted,
+                UpdateBy = patology.UpdateBy,
+                UpdateDate = patology.UpdateDate,
+            };
         }
     }
 }

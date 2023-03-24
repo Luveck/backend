@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace Luveck.Service.Security.DTO
 {
@@ -6,8 +7,6 @@ namespace Luveck.Service.Security.DTO
     {
         [Required(ErrorMessage = "El DNI es obligatorio.")]
         public string DNI { get; set; }
-
-        [Required(ErrorMessage = "El pasword es obligatorio")]
         public string Password { get; set; }
 
         [Required(ErrorMessage = "El correo es obligatorio")]
@@ -21,5 +20,12 @@ namespace Luveck.Service.Security.DTO
 
         [Required(ErrorMessage = "El apellido es obligatorio")]
         public string Phone { get; set; }
+        public string idRole { get; set; }
+        public string Role { get; set; }
+        public DateTime BornDate { get; set; }
+        public string Sex { get; set; }
+        public bool state { get; set; }
+        public string Address { get; set; }
+
     }
 }

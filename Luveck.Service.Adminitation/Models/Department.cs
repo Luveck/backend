@@ -16,6 +16,7 @@ namespace Luveck.Service.Administration.Models
         public DateTime UpdateDate { get; set; }
 
         [ForeignKey("countryId")]
+        public int countryId { get; set; }
         public Country Country { get; set; }
     }
 }

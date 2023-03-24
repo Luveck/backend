@@ -67,17 +67,6 @@ namespace Luveck.Service.Security
 
             #region IdentityCore
 
-            //services.Configure<IdentityOptions>(opt =>
-            //{
-            //    opt.Password.RequiredLength = 8;
-            //    opt.Password.RequireLowercase = true;
-            //    opt.Password.RequireUppercase = true;
-            //    opt.Password.RequireNonAlphanumeric = true;
-            //    opt.Password.RequiredUniqueChars = 1;
-            //    opt.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(30);
-            //    opt.Lockout.MaxFailedAccessAttempts = 3;
-            //});
-
             var builder = services.AddIdentityCore<User>(opt =>
             {
                 opt.Password.RequiredLength = 8;
@@ -89,7 +78,8 @@ namespace Luveck.Service.Security
                 opt.Lockout.MaxFailedAccessAttempts = 3;
             })
                 .AddRoles<IdentityRole>()
-                .AddEntityFrameworkStores<AppDbContext>();
+                .AddEntityFrameworkStores<AppDbContext>()
+                .AddDefaultTokenProviders();
 
             services.TryAddSingleton<ISystemClock, SystemClock>();
 

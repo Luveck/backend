@@ -1,4 +1,5 @@
 ﻿using Luveck.Service.Security.Data;
+using Luveck.Service.Security.DTO;
 using Luveck.Service.Security.DTO.Response;
 using Luveck.Service.Security.Handlers;
 using Luveck.Service.Security.Models;
@@ -19,14 +20,15 @@ namespace Luveck.Service.Security.Controllers
 {
     [TypeFilter(typeof(CustomExceptionAttribute))]
     [ApiController]
+    [Authorize]
     [Route("api/Roles")]
     [ApiExplorerSettings(GroupName = "ApiSecurityRoles")]
     public class RolesController : ControllerBase
     {
-        private readonly IRole _role;
+        private readonly IRoleRepository _role;
         private readonly IHeaderClaims _headerClaims;        
 
-        public RolesController(IRole role, IHeaderClaims headerClaims)
+        public RolesController(IRoleRepository role, IHeaderClaims headerClaims)
         {
             _role = role;
             _headerClaims = headerClaims;
@@ -34,11 +36,11 @@ namespace Luveck.Service.Security.Controllers
 
         [Route("CreateRole")]
         [HttpPost]
-        [Authorize]
         [ProducesResponseType((int)HttpStatusCode.OK)]
         public async Task<IActionResult> CreateRole(string role)
         {
-            GeneralResponseDto result = await _role.CreateRole(role);
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+            GeneralResponseDto result = await _role.CreateRole(role, user);
 
             var response = new ResponseModel<GeneralResponseDto>()
             {
@@ -51,13 +53,10 @@ namespace Luveck.Service.Security.Controllers
         }
 
         /// <summary>
-        /// Get files product by id
+        /// Get roles by id
         /// </summary>
         /// <param></param>
-        /// <returns>List RolesResponseDto</returns>
-
-        
-
+        /// <returns>List RolesResponseDto</returns>       
         [HttpGet]
         [Route("GetRoles")]
         [ProducesResponseType(typeof(ResponseModel<List<RoleResponseDto>>), (int)HttpStatusCode.OK)]
@@ -73,119 +72,52 @@ namespace Luveck.Service.Security.Controllers
             return Ok(response);
         }
 
-        //private readonly AppDbContext _db;
-        //private readonly UserManager<IdentityUser> _userManager;
-        //private readonly RoleManager<IdentityRole> _roleManager;
+        /// <summary>
+        /// Post to update role name in table role
+        /// </summary>
+        /// <param name="role"></param>
+        /// <returns></returns>
+        [Route("UpdateRole")]
+        [HttpPost]
+        [Authorize]
+        [ProducesResponseType((int)HttpStatusCode.OK)]
+        public async Task<IActionResult> UpdateRole(RoleRequestDto role)
+        {
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+            GeneralResponseDto result = await _role.UpdateRole(role, user);
 
-        //public RolesController(AppDbContext db, UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
-        //{
-        //    _db = db;
-        //    _userManager = userManager;
-        //    _roleManager = roleManager;
-        //}
+            var response = new ResponseModel<GeneralResponseDto>()
+            {
+                IsSuccess = result.Code == "201" ? true : false,
+                Messages = result.Message,
+                Result = result
+            };
+            return Ok(response);
 
-        //[HttpGet]
-        //[Route("GetRoles")]
-        //[ProducesResponseType(200, Type = typeof(IdentityRole))]
-        //[ProducesResponseType(StatusCodes.Status501NotImplemented)]
-        //public IActionResult getRoles()
-        //{
-        //    var roles = _db.Roles.ToList();
-        //    return Ok(roles) ;
-        //}
+        }
 
-        //[HttpGet]
-        //[Route("GetRolById")]
-        //[ProducesResponseType(200, Type = typeof(IdentityRole))]
-        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-        //[ProducesResponseType(StatusCodes.Status501NotImplemented)]
-        //public IActionResult getRole(string id)
-        //{
-        //    if (string.IsNullOrEmpty(id))
-        //    {
-        //        return BadRequest("Debe enviar el id del rol");
-        //    }
-        //    var role = _db.Roles.FirstOrDefault(u => u.Id == id); ;
-        //    return Ok(role);
-        //}
+        /// <summary>
+        /// Post to delete role name in table role, change state on table to false
+        /// </summary>
+        /// <param name="role"></param>
+        /// <returns></returns>
+        [Route("DeleteRole")]
+        [HttpPost]
+        [Authorize]
+        [ProducesResponseType((int)HttpStatusCode.OK)]
+        public async Task<IActionResult> DeleteRole(string roleId)
+        {
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+            GeneralResponseDto result = await _role.DeleteRole(roleId, user);
 
-        //[HttpDelete]
-        //[Route("DeleteRole")]
-        //[ValidateAntiForgeryToken]
-        //[ProducesResponseType(200, Type = typeof(string))]
-        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-        //[ProducesResponseType(StatusCodes.Status501NotImplemented)]
-        //public async Task<IActionResult> Delete(string id)
-        //{
-        //    var role= _db.Roles.FirstOrDefault(u => u.Id == id);
-        //    int currentStamp = 0;
-        //    if (role == null)
-        //    {
-        //        return BadRequest("Role no existe");
-        //    }
+            var response = new ResponseModel<GeneralResponseDto>()
+            {
+                IsSuccess = result.Code == "201" ? true : false,
+                Messages = result.Message,
+                Result = result
+            };
+            return Ok(response);
 
-        //    if(!Int32.TryParse(role.NormalizedName, out currentStamp))
-        //    {
-        //        return BadRequest("Este role no puede ser eliminado.");
-        //    }
-        //    await _roleManager.DeleteAsync(role);
-        //    return Ok("El Role ha sido borrado.");
-        //}
-
-        //[HttpPost]
-        //[Route("CreateRole")]
-        //[ValidateAntiForgeryToken]
-        //[ProducesResponseType(200, Type = typeof(string))]
-        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-        //[ProducesResponseType(StatusCodes.Status501NotImplemented)]
-        //public async Task<IActionResult> CreateRole(string name)
-        //{
-        //    if (await _roleManager.RoleExistsAsync(name))
-        //    {
-        //        return BadRequest("Role ya existe");
-        //    }
-        //    var result = await _roleManager.CreateAsync(new IdentityRole() { Name = name });
-
-        //    if (result.Succeeded)
-        //    {
-        //        return Ok(new
-        //        {
-        //            role = name,
-        //            result = result.Succeeded,
-        //            message = "El Rol ha sido creado."
-        //        });
-        //    }
-        //    return BadRequest("Se ha presentado un error creando el role.");
-        //}
-
-        //[HttpPost]
-        //[Route("UpdateRole")]
-        //[ValidateAntiForgeryToken]
-        //[ProducesResponseType(200, Type = typeof(string))]
-        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-        //[ProducesResponseType(StatusCodes.Status501NotImplemented)]
-        //public async Task<IActionResult> UpdateRole(string id, string newName)
-        //{
-        //    var role = _db.Roles.FirstOrDefault(u => u.Id == id);
-        //    if (role != null)
-        //    {
-        //        return BadRequest("Role no existe");
-        //    }
-        //    role.Name = newName.Trim();
-        //    role.NormalizedName = newName.ToUpper().Trim();
-
-        //    var result = await _roleManager.UpdateAsync(role);
-
-        //    if (result.Succeeded)
-        //    {
-        //        return Ok(new
-        //        {
-        //            role = role,
-        //            result = result.Succeeded,
-        //            message = "El Rol ha sido actualizado."
-        //        });
-        //    }
-        //    return BadRequest("Se ha presentado un error actualizando el role.");
-        //}
+        }
     }
 }

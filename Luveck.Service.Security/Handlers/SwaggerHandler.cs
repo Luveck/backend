@@ -36,6 +36,12 @@ namespace Luveck.Service.Security.Handlers
                     Version = "v1",
                     Description = "Backend Module",
                 });
+                c.SwaggerDoc("ApiAudit", new OpenApiInfo()
+                {
+                    Title = "Api Audit site",
+                    Version = "v1",
+                    Description = "Backend Audit site",
+                });
 
                 //c.AddSecurityDefinition("Bearer",
                 //   new OpenApiSecurityScheme()
@@ -76,6 +82,7 @@ namespace Luveck.Service.Security.Handlers
                 c.SwaggerEndpoint("/swagger/ApiSecurityRoles/swagger.json", "Api Security Roles");
                 c.SwaggerEndpoint("/swagger/ApiSecurityModuleRole/swagger.json", "Api Security Module by role");
                 c.SwaggerEndpoint("/swagger/ApiSecurityModule/swagger.json", "Api Security Module");
+                c.SwaggerEndpoint("/swagger/ApiAudit/swagger.json", "Api Audit site");
             });
 
             //app.UseSwagger();

@@ -28,10 +28,11 @@ namespace Luveck.Service.Security.Handlers
             //Domain
             services.AddTransient<IAutenticationService, AutenticationService>();
             services.AddTransient<IJwtServices, JwtServices>();
-            services.AddTransient<IRole, Role>();
+            services.AddTransient<IRoleRepository, RoleRepository>();
             services.AddTransient<IMailService, MailService>();
             services.AddTransient<IModuleRepository, ModuleRepository>();
             services.AddTransient<IModuleRoleRepository, ModuleRoleRepository>();
+            services.AddTransient<IAuditService, AuditService>();
 
             //Infraestructure
             services.AddTransient<IEmailSender, MailJetEmailSender>();

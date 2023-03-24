@@ -16,6 +16,7 @@ namespace Luveck.Service.Administration.Models
         public DateTime UpdateDate { get; set; }
         public bool IsDeleted { get; set; }
         [ForeignKey("cityId")]
-        public City city { get; set; }
+        public int cityId { get; set; }
+        public City city { get; set; }        
     }
 }

@@ -1,14 +1,20 @@
 using Luveck.Service.Administration.Data;
+using Luveck.Service.Administration.Handlers;
 using Luveck.Service.Administration.Mapper;
 using Luveck.Service.Administration.Repository;
 using Luveck.Service.Administration.Repository.IRepository;
+using Luveck.Service.Administration.Utils.Jwt;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using System.Globalization;
 
 namespace Luveck.Service.Administration
 {
@@ -24,121 +30,70 @@ namespace Luveck.Service.Administration
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<AppDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Defaultconnection")));
-            services.AddScoped<ICountryRepository, CountryRepository>();
-            services.AddScoped<IDepartmentRepository, DepartmentRepository>();
-            services.AddScoped<ICityRepository, CityRepository>();
-            services.AddScoped<ICategoryRepository, CategoryRepository>();
-            services.AddScoped<IPatologyRepository, PatologyRepository>();
-            services.AddScoped<IPharmacyRepository, PharmacyRepository>();
-            services.AddScoped<IMedicalRepository, MedicalRespository>();
-            services.AddScoped<IProductRepository, ProductRepository>();
-            services.AddScoped<IPurchaseRepository, PurchaseRepository>();
-            services.AddAutoMapper(typeof(MapperConfigAdministration));
+            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
             services.AddControllers();
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("ApiAdminCountry", new OpenApiInfo()
-                {
-                    Title = "Api Administration Country",
-                    Version = "v1",
-                    Description = "Backend country administration.",
-                });
+            services.AddAutoMapper(typeof(Startup));
+            services.AddControllersWithViews();
+            services.AddDistributedMemoryCache();
+            services.AddSession();
 
-                c.SwaggerDoc("ApiAdminDepartment", new OpenApiInfo()
-                {
-                    Title = "Api Administration Department",
-                    Version = "v1",
-                    Description = "Backend department administration.",
-                });
+            #region Jwt Configuration
+            IConfigurationSection jwtAppSettings = Configuration.GetSection("JWTSettings");
+            services.Configure<JwtSetting>(jwtAppSettings);
+            JwtConfigurationHandler.ConfigureJwtAuthentication(services, jwtAppSettings);
+            #endregion Jwt Configuration
+            
+            #region Swagger
+            SwaggerHandler.SwaggerConfig(services);
+            //services.AddApiVersioning();
+            #endregion
 
-                c.SwaggerDoc("ApiAdminCity", new OpenApiInfo()
-                {
-                    Title = "Api Administration City",
-                    Version = "v1",
-                    Description = "Backend City administration.",
-                });
-                c.SwaggerDoc("ApiAdminSBU", new OpenApiInfo()
-                {
-                    Title = "Api SBU",
-                    Version = "v1",
-                    Description = "Backend SBU administration.",
-                });
-                c.SwaggerDoc("ApiAdminCategory", new OpenApiInfo()
-                {
-                    Title = "Api Categories",
-                    Version = "v1",
-                    Description = "Backend Categories administration.",
-                });
-                c.SwaggerDoc("ApiAdminProduct", new OpenApiInfo()
-                {
-                    Title = "Api Prooduct",
-                    Version = "v1",
-                    Description = "Backend Product administration.",
-                });
-                c.SwaggerDoc("ApiAdminPatology", new OpenApiInfo()
-                {
-                    Title = "Api Patology",
-                    Version = "v1",
-                    Description = "Backend Patology administration.",
-                });
-                c.SwaggerDoc("ApiAdminPharmacy", new OpenApiInfo()
-                {
-                    Title = "Api Pharmacy",
-                    Version = "v1",
-                    Description = "Backend Pharmacy administration.",
-                });
-                c.SwaggerDoc("ApiAdminMedical", new OpenApiInfo()
-                {
-                    Title = "Api Medical",
-                    Version = "v1",
-                    Description = "Backend Medical administration.",
-                });
-                c.SwaggerDoc("ApiAdminPurchase", new OpenApiInfo()
-                {
-                    Title = "Api Purchase",
-                    Version = "v1",
-                    Description = "Backend Purchase administration.",
-                });
-            });
+            #region Context SQL Server
+            //services.AddDbContext<AppDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Defaultconnection")));
+            services.AddDbContext<AppDbContext>(options =>
+               options.UseSqlServer(Configuration.GetConnectionString("Defaultconnection"),
+               providerOptions => providerOptions.EnableRetryOnFailure()));
+
+            #endregion Context SQL Server
+
+            #region Register (dependency injection)
+
+            DependencyInyectionHandler.DependencyInyectionConfig(services);
+
+            #endregion Register (dependency injection)
+
             services.AddCors(options =>
             {
-                options.AddDefaultPolicy(
-                    policy =>
-                    {
-                        policy.WithOrigins("http://localhost:4200", "http://localhost:4349/", "luveck.azurewebsites.net", "*");
-                    });
+                options.AddPolicy("CorsPolicy",
+                builder => builder.SetIsOriginAllowed(_ => true)
+                .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials());
             });
         }
-
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            var cultureInfo = new CultureInfo("es-CO");
+            CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+            CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+
+            app.UseCors("CorsPolicy");
+            app.UseHsts();
+            app.UseHttpsRedirection();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+
             }
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/ApiAdminCountry/swagger.json", "Api Administration Country");
-                c.SwaggerEndpoint("/swagger/ApiAdminDepartment/swagger.json", "Api Administration Department");
-                c.SwaggerEndpoint("/swagger/ApiAdminCity/swagger.json", "Api Administration City");
-                c.SwaggerEndpoint("/swagger/ApiAdminSBU/swagger.json", "Api Administration SBU");
-                c.SwaggerEndpoint("/swagger/ApiAdminCategory/swagger.json", "Api Administration Categories");
-                c.SwaggerEndpoint("/swagger/ApiAdminProduct/swagger.json", "Api Administration Product");
-                c.SwaggerEndpoint("/swagger/ApiAdminPatology/swagger.json", "Api Administration Patology");
-                c.SwaggerEndpoint("/swagger/ApiAdminPharmacy/swagger.json", "Api Administration Pharmacy");
-                c.SwaggerEndpoint("/swagger/ApiAdminMedical/swagger.json", "Api Administration Medical");
-                c.SwaggerEndpoint("/swagger/ApiAdminPurchase/swagger.json", "Api Administration Purchase");
-            });
 
-            app.UseHttpsRedirection();
-
+            app.UseCors("CorsPolicy");
+            app.UseSession();
+            SwaggerHandler.UseSwagger(app);
             app.UseRouting();
 
             app.UseAuthentication();
-            app.UseCors();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
