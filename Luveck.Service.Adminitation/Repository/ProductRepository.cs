@@ -15,18 +15,23 @@ using Luveck.Service.Administration.Utils.Exceptions;
 using Luveck.Service.Administration.Utils.Resource;
 using System.Xml.Linq;
 using Microsoft.Extensions.Configuration;
+using System.IO;
+using System.Net.Http;
+using static Azure.Core.HttpHeader;
+using System.Security.Policy;
 
 namespace Luveck.Service.Administration.Repository
 {
     public class ProductRepository : IProductRepository
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IConfiguration configuration;
+        private readonly IConfiguration _configuration;
         private readonly IRestService restService;
 
-        public ProductRepository(IUnitOfWork unitOfWork)
+        public ProductRepository(IUnitOfWork unitOfWork, IConfiguration configuration)
         {
-            _unitOfWork= unitOfWork;
+            _unitOfWork = unitOfWork;
+            _configuration = configuration;
         }
 
         public async Task<ProductResponseDto> CreateProduct(ProductRequestDto productDto, string user)
@@ -34,7 +39,7 @@ namespace Luveck.Service.Administration.Repository
             try
             {
                 var category = await _unitOfWork.CategoryRepository.Find(x => x.Id == productDto.IdCategory);
-                if(category == null) throw new BusinessException(GeneralMessage.CategoryNoExist);
+                if (category == null) throw new BusinessException(GeneralMessage.CategoryNoExist);
 
                 var product = await _unitOfWork.ProductRepository.Find(x => x.Name.ToLower() == productDto.Name.ToLower());
                 if (product != null) throw new BusinessException(GeneralMessage.ProductExist);
@@ -61,23 +66,40 @@ namespace Luveck.Service.Administration.Repository
 
                 product = await _unitOfWork.ProductRepository.Find(x => x.Name.ToLower() == productDto.Name.ToLower());
 
+                string result = string.Empty;
+                foreach (var img in productDto.File)
+                {
+                    try
+                    {
+                        await LoadImageAsync(img, product.Id);
+                    }
+                    catch
+                    {
+                        result = "Se presento un problema cargando las imagenes.";
+                    }
+                }
+
+                List<ProductImgResponseDto> url = await GetCarrusel();
+
                 return new ProductResponseDto()
                 {
-                    Cost= product.Cost,
-                    CreateBy= product.CreateBy,
-                    CreationDate= product.CreationDate,
+                    Cost = product.Cost,
+                    CreateBy = product.CreateBy,
+                    CreationDate = product.CreationDate,
                     Description = product.Description,
                     Id = product.Id,
                     Barcode = product.Barcode,
                     IdCategory = category.Id,
                     state = product.state,
-                    Name= product.Name,
-                    NameCategory= category.Name,
-                    presentation= product.presentation,
-                    Quantity= product.Quantity,
-                    TypeSell= product.TypeSell,
+                    Name = product.Name,
+                    NameCategory = category.Name,
+                    presentation = product.presentation,
+                    Quantity = product.Quantity,
+                    TypeSell = product.TypeSell,
                     UpdateBy = product.UpdateBy,
-                    UpdateDate = product.UpdateDate
+                    UpdateDate = product.UpdateDate,
+                    statusUploadImage = result,
+                    urlImgs = !string.IsNullOrEmpty(result) ? getImgByProductId(product.Id, url) : null,
                 };
             }
             catch (Exception ex)
@@ -96,7 +118,7 @@ namespace Luveck.Service.Administration.Repository
                 if (!productExist.Name.ToLower().Equals(productDto.Name.ToLower()))
                 {
                     var product = await _unitOfWork.ProductRepository.Find(x => x.Name.ToLower() == productDto.Name.ToLower());
-                    if(product != null) throw new BusinessException(GeneralMessage.ProductExist);
+                    if (product != null) throw new BusinessException(GeneralMessage.ProductExist);
                 }
 
                 productExist.presentation = productDto.presentation;
@@ -111,9 +133,24 @@ namespace Luveck.Service.Administration.Repository
                 productExist.Cost = productDto.Cost;
                 productExist.state = productDto.state;
                 productExist.UrlOficial = productDto.urlOficial;
-                _unitOfWork.ProductRepository.Update(productExist);
 
+                _unitOfWork.ProductRepository.Update(productExist);
                 await _unitOfWork.SaveAsync();
+
+                string result = string.Empty;
+                foreach (var img in productDto.File)
+                {
+                    try
+                    {
+                        await LoadImageAsync(img, productDto.Id);
+                    }
+                    catch
+                    {
+                        result = "Se presento un problema cargando las imagenes.";
+                    }
+                }
+
+                List<ProductImgResponseDto> url = await GetCarrusel();
 
                 return new ProductResponseDto()
                 {
@@ -132,7 +169,9 @@ namespace Luveck.Service.Administration.Repository
                     TypeSell = productExist.TypeSell,
                     UpdateBy = productExist.UpdateBy,
                     UpdateDate = productExist.UpdateDate,
-                    urlOficial = productExist.UrlOficial
+                    urlOficial = productExist.UrlOficial,
+                    statusUploadImage = result,
+                    urlImgs = !string.IsNullOrEmpty(result) ? getImgByProductId(productExist.Id, url) : null
                 };
             }
             catch (Exception ex)
@@ -140,13 +179,12 @@ namespace Luveck.Service.Administration.Repository
                 throw ex;
             }
         }
-
         public async Task<bool> deleteProduct(int id, string user)
         {
             try
             {
                 var product = await _unitOfWork.ProductRepository.Find(x => x.Id == id);
-                if(product == null) throw new BusinessException(GeneralMessage.CategoryNoExist);
+                if (product == null) throw new BusinessException(GeneralMessage.CategoryNoExist);
 
                 product.state = false;
                 _unitOfWork.ProductRepository.Update(product);
@@ -159,12 +197,13 @@ namespace Luveck.Service.Administration.Repository
                 throw ex;
             }
         }
-
         public async Task<ProductResponseDto> GetProductById(int id)
         {
+            List<ProductImgResponseDto> url = await GetCarrusel();
             var product = await (from prod in _unitOfWork.ProductRepository.AsQueryable()
                                  join cat in _unitOfWork.CategoryRepository.AsQueryable() on prod.category.Id equals cat.Id
-                                 where prod.Id == id select new ProductResponseDto()
+                                 where prod.Id == id
+                                 select new ProductResponseDto()
                                  {
                                      Cost = prod.Cost,
                                      CreateBy = prod.CreateBy,
@@ -181,13 +220,15 @@ namespace Luveck.Service.Administration.Repository
                                      TypeSell = prod.TypeSell,
                                      UpdateBy = prod.UpdateBy,
                                      UpdateDate = prod.UpdateDate,
-                                     urlOficial = prod.UrlOficial
+                                     urlOficial = prod.UrlOficial,
+                                     urlImgs = getImgByProductId(prod.Id, url)
                                  }).FirstOrDefaultAsync();
             return product;
         }
-
         public async Task<ProductResponseDto> GetProductByName(string name)
         {
+            List<ProductImgResponseDto> url = await GetCarrusel();
+
             var product = await (from prod in _unitOfWork.ProductRepository.AsQueryable()
                                  join cat in _unitOfWork.CategoryRepository.AsQueryable() on prod.category.Id equals cat.Id
                                  where prod.Name.ToUpper().Equals(name.ToUpper())
@@ -208,12 +249,15 @@ namespace Luveck.Service.Administration.Repository
                                      TypeSell = prod.TypeSell,
                                      UpdateBy = prod.UpdateBy,
                                      UpdateDate = prod.UpdateDate,
-                                     urlOficial = prod.UrlOficial
+                                     urlOficial = prod.UrlOficial,
+                                     urlImgs = getImgByProductId(prod.Id, url)
                                  }).FirstOrDefaultAsync();
             return product;
         }
         public async Task<ProductResponseDto> GetProductByBarcode(string barcode)
         {
+            List<ProductImgResponseDto> url = await GetCarrusel();
+
             var product = await (from prod in _unitOfWork.ProductRepository.AsQueryable()
                                  join cat in _unitOfWork.CategoryRepository.AsQueryable() on prod.category.Id equals cat.Id
                                  where prod.Barcode.ToUpper().Equals(barcode.ToUpper())
@@ -234,61 +278,68 @@ namespace Luveck.Service.Administration.Repository
                                      TypeSell = prod.TypeSell,
                                      UpdateBy = prod.UpdateBy,
                                      UpdateDate = prod.UpdateDate,
-                                     urlOficial = prod.UrlOficial
+                                     urlOficial = prod.UrlOficial,
+                                     urlImgs = getImgByProductId(prod.Id, url)
                                  }).FirstOrDefaultAsync();
             return product;
         }
 
         public async Task<List<ProductResponseDto>> GetProducts()
         {
-            List < ProductResponseDto > lst = await (from prod in _unitOfWork.ProductRepository.AsQueryable()
-                                                     join cat in _unitOfWork.CategoryRepository.AsQueryable() on prod.category.Id equals cat.Id
-                                                     select new ProductResponseDto
-                                                     {
-                                                         Id= prod.Id,
-                                                         Cost= prod.Cost,
-                                                         CreateBy= prod.CreateBy,
-                                                         CreationDate = prod.CreationDate,
-                                                         Description = prod.Description,
-                                                         Name= prod.Name,
-                                                         presentation = prod.presentation,
-                                                         Quantity= prod.Quantity,
-                                                         state= prod.state,
-                                                         Barcode = prod.Barcode,
-                                                         TypeSell = prod.TypeSell,
-                                                         UpdateBy= prod.UpdateBy,
-                                                         UpdateDate = prod.UpdateDate,
-                                                         IdCategory = cat.Id,
-                                                         NameCategory = cat.Name,
-                                                         urlOficial = prod.UrlOficial
-                                                     } ).ToListAsync();
+            List<ProductImgResponseDto> url = await GetCarrusel();
+
+            List<ProductResponseDto> lst = await (from prod in _unitOfWork.ProductRepository.AsQueryable()
+                                                  join cat in _unitOfWork.CategoryRepository.AsQueryable() on prod.category.Id equals cat.Id
+                                                  select new ProductResponseDto
+                                                  {
+                                                      Id = prod.Id,
+                                                      Cost = prod.Cost,
+                                                      CreateBy = prod.CreateBy,
+                                                      CreationDate = prod.CreationDate,
+                                                      Description = prod.Description,
+                                                      Name = prod.Name,
+                                                      presentation = prod.presentation,
+                                                      Quantity = prod.Quantity,
+                                                      state = prod.state,
+                                                      Barcode = prod.Barcode,
+                                                      TypeSell = prod.TypeSell,
+                                                      UpdateBy = prod.UpdateBy,
+                                                      UpdateDate = prod.UpdateDate,
+                                                      IdCategory = cat.Id,
+                                                      NameCategory = cat.Name,
+                                                      urlOficial = prod.UrlOficial,  
+                                                      urlImgs = getImgByProductId(prod.Id, url)
+                                                  }).ToListAsync();
             return lst;
         }
 
         public async Task<List<ProductResponseDto>> GetProductsByCategory(int idCategory)
         {
-            List<ProductResponseDto> lst = await(from prod in _unitOfWork.ProductRepository.AsQueryable()
-                                                 join cat in _unitOfWork.CategoryRepository.AsQueryable() on prod.category.Id equals cat.Id
-                                                 where cat.Id == idCategory
-                                                 select new ProductResponseDto
-                                                 {
-                                                     Id = prod.Id,
-                                                     Cost = prod.Cost,
-                                                     CreateBy = prod.CreateBy,
-                                                     CreationDate = prod.CreationDate,
-                                                     Description = prod.Description,
-                                                     Name = prod.Name,
-                                                     presentation = prod.presentation,
-                                                     Quantity = prod.Quantity,
-                                                     state = prod.state,
-                                                     Barcode = prod.Barcode,
-                                                     TypeSell = prod.TypeSell,
-                                                     UpdateBy = prod.UpdateBy,
-                                                     UpdateDate = prod.UpdateDate,
-                                                     IdCategory = cat.Id,
-                                                     NameCategory = cat.Name,
-                                                     urlOficial = prod.UrlOficial
-                                                 }).ToListAsync();
+            List<ProductImgResponseDto> url = await GetCarrusel();
+
+            List<ProductResponseDto> lst = await (from prod in _unitOfWork.ProductRepository.AsQueryable()
+                                                  join cat in _unitOfWork.CategoryRepository.AsQueryable() on prod.category.Id equals cat.Id
+                                                  where cat.Id == idCategory
+                                                  select new ProductResponseDto
+                                                  {
+                                                      Id = prod.Id,
+                                                      Cost = prod.Cost,
+                                                      CreateBy = prod.CreateBy,
+                                                      CreationDate = prod.CreationDate,
+                                                      Description = prod.Description,
+                                                      Name = prod.Name,
+                                                      presentation = prod.presentation,
+                                                      Quantity = prod.Quantity,
+                                                      state = prod.state,
+                                                      Barcode = prod.Barcode,
+                                                      TypeSell = prod.TypeSell,
+                                                      UpdateBy = prod.UpdateBy,
+                                                      UpdateDate = prod.UpdateDate,
+                                                      IdCategory = cat.Id,
+                                                      NameCategory = cat.Name,
+                                                      urlOficial = prod.UrlOficial,
+                                                      urlImgs = getImgByProductId(prod.Id, url)
+                                                  }).ToListAsync();
             return lst;
         }
 
@@ -297,40 +348,68 @@ namespace Luveck.Service.Administration.Repository
         /// </summary>
         /// <param name="requestFile"></param>
         /// <returns></returns>
-        private string LoadImage(FileRequestDto requestFile)
+        private async Task LoadImageAsync(FileRequestDto requestFile, int idProduct)
         {
+            string url = _configuration.GetSection("MyConfig:StorageConnection").Value;            
+            string container = _configuration.GetSection("MyConfig:ContainerName").Value;
 
-            string url = configuration.GetSection("AdminFiles:Url").Value;
-            string controller = configuration.GetSection("AdminFiles:AzureBlobStore:Controller").Value;
-            string container = configuration.GetSection("AdminFiles:AzureBlobStore:Params:Container").Value;
-            string pathBlob = configuration.GetSection("AdminFiles:AzureBlobStore:Params:PathBlob").Value;
+            BlobStorage upload = new BlobStorage();
+            var stream = new MemoryStream(Convert.FromBase64String(requestFile.FileBase64));
+            string result = await upload.UploadDocument(url, container, requestFile.Name + "(prod"+idProduct+")", stream);
 
-            Dictionary<string, string> headers = new Dictionary<string, string>
+            if (result.Equals("C"))
             {
-            };
+                await _unitOfWork.ImageProductRepository.InsertAsync(new ImageProduct()
+                {
+                    fileName = requestFile.Name + "(prod" + idProduct + ")",
+                    productId = idProduct
+                });
+                await _unitOfWork.SaveAsync();
+            }
+        }
+        private async Task<List<ProductImgResponseDto>> GetCarrusel()
+        {
+            string url = _configuration.GetSection("MyConfig:StorageConnection").Value;
+            string container = _configuration.GetSection("MyConfig:ContainerName").Value;
+            BlobStorage getImgs = new BlobStorage();
+            List<string> imgName = await getImgs.GetAllDocuments(url, container);
 
-            BlobDto request = new BlobDto
+            List<ProductImgResponseDto> imgData = new List<ProductImgResponseDto>();
+
+            foreach (var img in imgName) 
             {
-                ContentsBase64 = requestFile.FileBase64,
-                Container = container,
-                PathBlob = pathBlob,
-                ContentType = ""
-            };
+                imgData.Add(new ProductImgResponseDto()
+                {
+                    imgName = img,
+                    url = url + "/" + container + "/" + img
+                });
+            }
+            return imgData;
+        }
 
-            request.BlobName = requestFile.Name;
-
-
-
-            ResponseFileAdminDto result = restService.PostRestServiceAsync<ResponseFileAdminDto>(url, controller, "Save", request, headers).Result;
-            if (result != null)
+        public async Task<bool> deleteImage(string fileName)
+        {
+            string url = _configuration.GetSection("MyConfig:StorageConnection").Value;
+            string container = _configuration.GetSection("MyConfig:ContainerName").Value;
+            BlobStorage Delete = new BlobStorage();
+            bool response = await Delete.DeleteDocument(url, container, fileName);
+            
+            if (response)
             {
-                return (result.IsSuccess ? result.Data.BlobName : string.Empty);
+                var id = _unitOfWork.ImageProductRepository.FirstOrDefaultNoTracking(x => x.fileName.Equals(fileName));
+                if(id != null)
+                {
+                    _unitOfWork.ImageProductRepository.Delete(id.Id);
+                    await _unitOfWork.SaveAsync();
+                }
             }
 
+            return response;
+        }
 
-            return string.Empty;
-
-
+        private List<ProductImgResponseDto> getImgByProductId(int productId, List<ProductImgResponseDto> imgData)
+        {
+            return imgData.FindAll(x => x.imgName.ToLower().Contains("(prod" + productId + ")".ToLower())).ToList();
         }
     }
 }

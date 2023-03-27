@@ -191,6 +191,26 @@ namespace Luveck.Service.Administration.Migrations
                     b.ToTable("ExchangedProducts");
                 });
 
+            modelBuilder.Entity("Luveck.Service.Administration.Models.ImageProduct", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("fileName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("productId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("productId");
+
+                    b.ToTable("Images");
+                });
+
             modelBuilder.Entity("Luveck.Service.Administration.Models.MassiveRemainder", b =>
                 {
                     b.Property<int>("Id")
@@ -540,6 +560,17 @@ namespace Luveck.Service.Administration.Migrations
                         .IsRequired();
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Luveck.Service.Administration.Models.ImageProduct", b =>
+                {
+                    b.HasOne("Luveck.Service.Administration.Models.Product", "product")
+                        .WithMany()
+                        .HasForeignKey("productId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("product");
                 });
 
             modelBuilder.Entity("Luveck.Service.Administration.Models.Medical", b =>

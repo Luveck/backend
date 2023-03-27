@@ -20,6 +20,7 @@ namespace Luveck.Service.Administration.UnitWork
         Repository<ProductPurchase> ProductPurchaseRepository { get; }
         Repository<ExchangedProduct> ExchangedProductRepository { get; }
         Repository<MassiveRemainder> MassiveRepository { get; }
+        Repository<ImageProduct> ImageProductRepository { get; }
         Task<int> SaveAsync();
         #endregion
     }

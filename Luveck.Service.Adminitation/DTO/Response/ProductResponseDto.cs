@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Luveck.Service.Administration.DTO.Response
 {
@@ -20,5 +21,13 @@ namespace Luveck.Service.Administration.DTO.Response
         public DateTime UpdateDate { get; set; }
         public int IdCategory { get; set; }
         public string NameCategory { get; set; }
+        public string statusUploadImage { get; set; }
+        public List<ProductImgResponseDto> urlImgs { get; set; }
+    }
+
+    public class ProductImgResponseDto
+    {
+        public string url { get; set; }
+        public string imgName { get; set; }
     }
 }

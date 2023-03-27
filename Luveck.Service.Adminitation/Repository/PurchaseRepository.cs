@@ -23,10 +23,12 @@ namespace Luveck.Service.Administration.Repository
 
         public async Task<PurshaseResponseDto> CreatePurchase(PurchaseRequestDto purchaseDto, string user)
         {
-            var purchaseExist = await unitOfWork.PurchaseRepository.Find(x => x.NoPurchase.ToUpper().Equals(purchaseDto.NoPurchase.ToUpper()));
-            if (purchaseExist != null) throw new BusinessException(GeneralMessage.PurchaseExist);
             var pharmacyExist = await unitOfWork.PharmacyRepository.Find(x => x.Id == purchaseDto.pharmacyId);
             if (pharmacyExist == null) throw new BusinessException(GeneralMessage.PharmacyNoExist);
+            var purchaseExist = await unitOfWork.PurchaseRepository.Find(x => x.NoPurchase.ToUpper().Equals(purchaseDto.NoPurchase.ToUpper())
+            && x.pharmacyId == purchaseDto.pharmacyId && x.userId.ToLower().Equals(purchaseDto.userId.ToLower()));
+            if (purchaseExist != null) throw new BusinessException(GeneralMessage.PurchaseExist);
+
 
             Purchase purchase = new Purchase()
             {
@@ -67,14 +69,16 @@ namespace Luveck.Service.Administration.Repository
         }
         public async Task<PurshaseResponseDto> UpdatePurchase(PurchaseRequestDto purchaseDto, string user)
         {
-            var purchaseExist = await unitOfWork.PurchaseRepository.Find(x => x.Id == purchaseDto.Id);
-            if (purchaseExist == null) throw new BusinessException(GeneralMessage.PurchaseNoExist);
             var pharmacyExist = await unitOfWork.PharmacyRepository.Find(x => x.Id == purchaseDto.pharmacyId);
             if (pharmacyExist == null) throw new BusinessException(GeneralMessage.PharmacyNoExist);
 
+            var purchaseExist = await unitOfWork.PurchaseRepository.Find(x => x.Id == purchaseDto.Id);
+            if (purchaseExist == null) throw new BusinessException(GeneralMessage.PurchaseNoExist);
+
             if (!purchaseExist.NoPurchase.ToLower().Equals(purchaseDto.NoPurchase.ToLower()))
             {
-                var noPurchaseExist = await unitOfWork.PurchaseRepository.Find(x => x.NoPurchase.ToUpper().Equals(purchaseDto.NoPurchase.ToUpper()));
+                var noPurchaseExist = await unitOfWork.PurchaseRepository.Find(x => x.NoPurchase.ToUpper().Equals(purchaseDto.NoPurchase.ToUpper())
+            && x.pharmacyId == purchaseDto.pharmacyId && x.userId.ToLower().Equals(purchaseDto.userId.ToLower()));
                 if (noPurchaseExist != null) throw new BusinessException(GeneralMessage.PurchaseExist);
             }
             purchaseExist.NoPurchase = purchaseDto.NoPurchase;
@@ -130,7 +134,6 @@ namespace Luveck.Service.Administration.Repository
                                      DateShiped = pur.DateShiped
                                  }).ToListAsync();
         }
-
         public async Task<List<PurshaseResponseDto>> GetPurchaseByClientID(string userName)
         {
             return await (from pur in unitOfWork.PurchaseRepository.AsQueryable()
@@ -154,8 +157,7 @@ namespace Luveck.Service.Administration.Repository
                               DateShiped = pur.DateShiped
                           }).ToListAsync();
         }
-
-        public async Task<PurshaseResponseDto> GetPurchaseByNoPurchase(string noPurchase)
+        public async Task<List<PurshaseResponseDto>> GetPurchaseByNoPurchase(string noPurchase)
         {
             return await (from pur in unitOfWork.PurchaseRepository.AsQueryable()
                           join pharma in unitOfWork.PharmacyRepository.AsQueryable() on pur.Pharmacy.Id equals pharma.Id
@@ -176,9 +178,8 @@ namespace Luveck.Service.Administration.Repository
                               UpdateDate = pur.UpdateDate,
                               Reviewed = pur.purchaseReviewed,
                               DateShiped = pur.DateShiped
-                          }).FirstOrDefaultAsync();
+                          }).ToListAsync();
         }
-
         public async Task<List<PurshaseResponseDto>> GetPurchaseByPharmacy(int idPharmacy)
         {
             return await (from pur in unitOfWork.PurchaseRepository.AsQueryable()
@@ -201,6 +202,30 @@ namespace Luveck.Service.Administration.Repository
                               Reviewed = pur.purchaseReviewed,
                               DateShiped = pur.DateShiped
                           }).ToListAsync();
+        }
+
+        public async Task<List<PurshaseResponseDto>> GetPurchaseByNoPurchaseByUser(string noPurchase, string user)
+        {
+            return await(from pur in unitOfWork.PurchaseRepository.AsQueryable()
+                         join pharma in unitOfWork.PharmacyRepository.AsQueryable() on pur.Pharmacy.Id equals pharma.Id
+                         join city in unitOfWork.CityRepository.AsQueryable() on pharma.city.Id equals city.Id
+                         where pur.NoPurchase == noPurchase && pur.userId.ToLower().Equals(user.ToLower())
+                         select new PurshaseResponseDto()
+                         {
+                             Id = pur.Id,
+                             Buyer = pur.userId,
+                             CityPharmacy = city.Name,
+                             CreateBy = pur.CreateBy,
+                             CreationDate = pur.CreationDate,
+                             IdCityPharmacy = city.Id,
+                             UpdateBy = pur.UpdateBy,
+                             IdPharmacy = pharma.Id,
+                             NamePharmacy = pharma.Name,
+                             NoPurchase = pur.NoPurchase,
+                             UpdateDate = pur.UpdateDate,
+                             Reviewed = pur.purchaseReviewed,
+                             DateShiped = pur.DateShiped
+                         }).ToListAsync();
         }
     }
 }

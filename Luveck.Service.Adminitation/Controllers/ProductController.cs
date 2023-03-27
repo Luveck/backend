@@ -2,11 +2,9 @@
 using Luveck.Service.Administration.DTO.Response;
 using Luveck.Service.Administration.Handlers;
 using Luveck.Service.Administration.Models;
-using Luveck.Service.Administration.Models.Dto;
 using Luveck.Service.Administration.Repository.IRepository;
 using Luveck.Service.Administration.Utils.Jwt.Interface;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -64,6 +62,7 @@ namespace Luveck.Service.Administration.Controllers
 
         [HttpGet]
         [Route("GetProductById")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ResponseModel<ProductResponseDto>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetProductsById(int id)
         {
@@ -154,6 +153,21 @@ namespace Luveck.Service.Administration.Controllers
                 IsSuccess = true,
                 Messages = "",
                 Result = result,
+            };
+            return Ok(response);
+        }
+
+        [HttpDelete]
+        [Route("DeleteImg")]
+        [ProducesResponseType(typeof(ResponseModel<string>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> DeleteImg(string fileName)
+        {
+            bool result = await _product.deleteImage(fileName); ;
+            var response = new ResponseModel<string>()
+            {
+                IsSuccess = result,
+                Messages = "",
+                Result = "",
             };
             return Ok(response);
         }

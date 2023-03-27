@@ -53,6 +53,8 @@ namespace Luveck.Service.Security.Repository
 
                 if (result.Succeeded)
                 {
+                    userExists.changePass = false;
+                    await _userManager.UpdateAsync(userExists);
                     return new RegisterUserResponseDto() { Code = "201", Message = GeneralMessage.PasswordChanged };
                 }
             }
@@ -125,6 +127,7 @@ namespace Luveck.Service.Security.Repository
             try
             {
                 var code = await _userManager.GeneratePasswordResetTokenAsync(userExists);
+                code = code.Replace("+", "%2B");
                 MailRequest request = new MailRequest();
                 request.Body = "Para cambiar la contraseña <a href=\"" + _config.GetSection("Genearls:UrlForgot").Value + "/?mail=" + userExists.Email + "&id=" + code + "\">Da click aqui</a>";
                 request.Subject = "Resetear Contraseña";

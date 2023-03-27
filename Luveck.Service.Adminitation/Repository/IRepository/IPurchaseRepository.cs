@@ -13,6 +13,7 @@ namespace Luveck.Service.Administration.Repository.IRepository
         Task<List<PurshaseResponseDto>> GetPurchases();
         Task<List<PurshaseResponseDto>> GetPurchaseByPharmacy(int idPharmacy);
         Task<List<PurshaseResponseDto>> GetPurchaseByClientID(string userName);
-        Task<PurshaseResponseDto> GetPurchaseByNoPurchase(string noPurchase);
+        Task<List<PurshaseResponseDto>> GetPurchaseByNoPurchase(string noPurchase);
+        Task<List<PurshaseResponseDto>> GetPurchaseByNoPurchaseByUser(string noPurchase, string user);
     }
 }

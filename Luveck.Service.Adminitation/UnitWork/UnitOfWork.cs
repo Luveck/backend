@@ -37,6 +37,7 @@ namespace Luveck.Service.Administration.UnitWork
         private Repository<ProductPurchase> productPurchaseRepository;
         private Repository<ExchangedProduct> exchangedProductRepository;
         private Repository<MassiveRemainder> massiveRepository;
+        private Repository<ImageProduct> imageProductRepository;
         public Repository<Country> CountryRepository
         {
             get
@@ -191,6 +192,18 @@ namespace Luveck.Service.Administration.UnitWork
                 }
 
                 return this.massiveRepository;
+            }
+        }
+        public Repository<ImageProduct> ImageProductRepository
+        {
+            get
+            {
+                if (this.imageProductRepository == null)
+                {
+                    this.imageProductRepository = new Repository<ImageProduct>(_contextSQL);
+                }
+
+                return this.imageProductRepository;
             }
         }
         #endregion

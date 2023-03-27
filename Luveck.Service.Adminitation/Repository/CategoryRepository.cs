@@ -28,6 +28,9 @@ namespace Luveck.Service.Administration.Repository
 
         public async Task<CategoryResponseDto> CreateUpdateCategory(CategoryRequestDto categoryDto, string user)
         {
+            var catExist = await _unitOfWork.CategoryRepository.Find(x => x.Name.ToLower().Equals(categoryDto.Name.Trim().ToLower()));
+            if (catExist != null) throw new BusinessException(GeneralMessage.CategoryExist);
+
             try
             {
                 if(categoryDto.Id == 0)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Luveck.Service.Administration.DTO
 {
@@ -15,5 +16,6 @@ namespace Luveck.Service.Administration.DTO
         public bool state { get; set; }
         public int IdCategory { get; set; }
         public string urlOficial { get; set; }
+        public List<FileRequestDto> File { get; set; }
     }
 }

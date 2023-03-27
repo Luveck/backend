@@ -15,5 +15,6 @@ namespace Luveck.Service.Administration.Repository.IRepository
         Task<ProductResponseDto> CreateProduct(ProductRequestDto productDto, string user);
         Task<ProductResponseDto> UpdateProduct(ProductRequestDto productDto, string user);
         Task<bool> deleteProduct(int id, string user);
+        Task<bool> deleteImage(string fileName);
     }
 }

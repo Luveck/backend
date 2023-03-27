@@ -63,11 +63,26 @@ namespace Luveck.Service.Administration.Controllers
 
         [HttpGet]
         [Route("GetPurchaseByNoPurchase")]
-        [ProducesResponseType(typeof(ResponseModel<PurshaseResponseDto>), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ResponseModel<List<PurshaseResponseDto>>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetPurchaseByNoPurchase(string PurchaseNo)
         {
             var purchases = await _purchase.GetPurchaseByNoPurchase(PurchaseNo);
-            var response = new ResponseModel<PurshaseResponseDto>()
+            var response = new ResponseModel<List<PurshaseResponseDto>>()
+            {
+                IsSuccess = true,
+                Messages = "",
+                Result = purchases,
+            };
+            return Ok(response);
+        }
+
+        [HttpGet]
+        [Route("GetPurchaseByNoPurchaseById")]
+        [ProducesResponseType(typeof(ResponseModel<List<PurshaseResponseDto>>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetPurchaseByNoPurchaseById(string PurchaseNo, string user)
+        {
+            var purchases = await _purchase.GetPurchaseByNoPurchaseByUser(PurchaseNo, user);
+            var response = new ResponseModel<List<PurshaseResponseDto>>()
             {
                 IsSuccess = true,
                 Messages = "",

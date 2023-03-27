@@ -21,5 +21,6 @@ namespace Luveck.Service.Administration.Data
         public DbSet<ProductPurchase> ProductPurchases { get; set; }
         public DbSet<ExchangedProduct> ExchangedProducts { get; set; }
         public DbSet<MassiveRemainder> MassiveRemainders { get; set; }
+        public DbSet<ImageProduct> Images { get; set; }
     }
 }
