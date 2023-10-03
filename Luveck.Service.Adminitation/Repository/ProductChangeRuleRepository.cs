@@ -10,16 +10,19 @@ using Luveck.Service.Administration.Models;
 using System;
 using Luveck.Service.Administration.Utils.Resource;
 using Luveck.Service.Administration.Utils.Exceptions;
+using Microsoft.Extensions.Configuration;
 
 namespace Luveck.Service.Administration.Repository
 {
     public class ProductChangeRuleRepository : IProductChangeRuleRepository
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IConfiguration _configuration;
 
-        public ProductChangeRuleRepository(IUnitOfWork unitOfWork)
+        public ProductChangeRuleRepository(IUnitOfWork unitOfWork, IConfiguration configuration)
         {
             _unitOfWork = unitOfWork;
+            _configuration = configuration;
         }
         public async Task<ProductRuleChangeResponseDto> AddRule(ProductChangeRuleRequestDto request, string userId)
         {
@@ -189,17 +192,32 @@ namespace Luveck.Service.Administration.Repository
 
         public async Task<List<ProductsLandingPageResponseDto>> getProducts()
         {
-            return await (from rule in _unitOfWork.ProductChangeRuleRepository.AsQueryable()
+            List<ProductsLandingPageResponseDto> list =  await (from rule in _unitOfWork.ProductChangeRuleRepository.AsQueryable()
                           join prod in _unitOfWork.ProductRepository.AsQueryable() on rule.product.Id equals prod.Id
                           join cat in _unitOfWork.CategoryRepository.AsQueryable() on prod.category.Id equals cat.Id
                           select new ProductsLandingPageResponseDto()
                           {
+                              Id = prod.Id,
                               nameProduct = prod.Name,
                               description = prod.Description,
-                              urlOfical = prod.UrlOficial,
                               IdCategoria = cat.Id,
-                              nameCategoria = cat.Name
+                              nameCategoria = cat.Name,
+                              maxYear = rule.MaxChangeYear,
+                              presentation = prod.presentation,
+                              QuantityBuy = rule.QuantityBuy,
+                              QuantityGive = rule.QuantityGive
                           }).ToListAsync();
+
+            if (list.Count > 0)
+            {
+                List<ProductImgResponseDto> url = await GetCarrusel();
+
+                foreach (var item in list)
+                {
+                    item.urlImages = getImgByProductId(item.Id, url);
+                }
+            }
+            return list;
         }
 
         public async Task<ProductRuleChangeResponseDto> GetRuleById(int id)
@@ -224,6 +242,31 @@ namespace Luveck.Service.Administration.Repository
                              state = rule.state,
                              productName = prod.Name
                          }).FirstOrDefaultAsync();
+        }
+        private async Task<List<ProductImgResponseDto>> GetCarrusel()
+        {
+            string url = _configuration.GetSection("MyConfig:StorageConnection").Value;
+            string container = _configuration.GetSection("MyConfig:ContainerName").Value;
+            string uri = _configuration.GetSection("MyConfig:uri").Value;
+            BlobStorage getImgs = new BlobStorage();
+            List<string> imgName = await getImgs.GetAllDocuments(url, container);
+
+            List<ProductImgResponseDto> imgData = new List<ProductImgResponseDto>();
+
+            foreach (var img in imgName)
+            {
+                imgData.Add(new ProductImgResponseDto()
+                {
+                    imgName = img,
+                    url = uri + container + "/" + img
+                });
+            }
+            return imgData;
+        }
+
+        private List<ProductImgResponseDto> getImgByProductId(int productId, List<ProductImgResponseDto> imgData)
+        {
+            return imgData.FindAll(x => x.imgName.ToLower().StartsWith("(prod" + productId + ")".ToLower())).ToList();
         }
     }
 }

@@ -14,7 +14,7 @@ using static Luveck.Service.Administration.Utils.enums.Enums;
 
 namespace Luveck.Service.Administration.Controllers
 {
-    //[Authorize]
+    [Authorize]
     [Route("api/Administration")]
     [ApiController]
     [ApiExplorerSettings(GroupName = "ApiAdminProduct")]
@@ -153,6 +153,23 @@ namespace Luveck.Service.Administration.Controllers
                 IsSuccess = true,
                 Messages = "",
                 Result = result,
+            };
+            return Ok(response);
+        }
+
+        [HttpPost]
+        [Route("UploadImage")]
+        [ProducesResponseType(typeof(ResponseModel<string>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> UploadImage(FileRequestDto img)
+        {
+            string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
+
+            bool result = await _product.LoadImageAsync(img);
+            var response = new ResponseModel<string>()
+            {
+                IsSuccess = result,
+                Messages = "",
+                Result = "",
             };
             return Ok(response);
         }

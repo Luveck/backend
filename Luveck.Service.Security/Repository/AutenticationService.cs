@@ -64,7 +64,6 @@ namespace Luveck.Service.Security.Repository
             }
             throw new BusinessException(GeneralMessage.GeneralError);
         }
-
         public async Task<RegisterUserResponseDto> Createuser(RegisterUserRequestDto user, string userRequest)
         {
             var userExists = await _userManager.FindByNameAsync(user.DNI.Trim());
@@ -118,7 +117,6 @@ namespace Luveck.Service.Security.Repository
             }
             throw new BusinessException(GeneralMessage.ErrorRegistrando);
         }
-
         public async Task<RegisterUserResponseDto> forgotPassword(string Email)
         {
             var userExists = await _userManager.FindByEmailAsync(Email.Trim());
@@ -143,7 +141,6 @@ namespace Luveck.Service.Security.Repository
             }
             throw new BusinessException(GeneralMessage.GeneralError);
         }
-
         public async Task<UserResponseDto> getUserByEmail(string Email)
         {
             var userExists = await _userManager.FindByEmailAsync(Email.Trim());
@@ -156,7 +153,6 @@ namespace Luveck.Service.Security.Repository
             };
             throw new NotImplementedException();
         }
-
         public async Task<UserResponseDto> getUserByDNI(string DNI)
         {
             var userExists = await _unitOfWork.UserRepository.Find(x=> x.UserName.ToUpper().Equals(DNI));
@@ -169,7 +165,6 @@ namespace Luveck.Service.Security.Repository
             };
             throw new NotImplementedException();
         }
-
         public async Task<UserResponseDto> getUserById(string Id)
         {
             var userExists = await _userManager.FindByIdAsync(Id.Trim());
@@ -184,7 +179,27 @@ namespace Luveck.Service.Security.Repository
         }
         public async Task<List<UserListResponseDto>> getUsers()
         {
+            //var users = await _userManager.Users.ToListAsync();
             List<UserListResponseDto> list = new List<UserListResponseDto>();
+
+            //foreach (var item in users)
+            //{
+            //    var role = await _userManager.GetRolesAsync(item);
+
+            //    list.Add(new UserListResponseDto()
+            //    {
+            //        Email = item.Email,
+            //        UserName = item.UserName,
+            //        Id = item.Id,
+            //        LastName = item.LastName,
+            //        Name = item.Name,
+            //        state = item.State,
+            //        role = role[0],                    
+            //    });
+            //}
+
+            //List<UserListResponseDto> list = new List<UserListResponseDto>();
+
             list = await _unitOfWork.UserRepository.AsQueryable().Select(x => new UserListResponseDto
             {
                 Email = x.Email,
@@ -192,6 +207,7 @@ namespace Luveck.Service.Security.Repository
                 Name = x.Name,
                 LastName = x.LastName,
                 state = x.State,
+                Id = x.Id
             }).ToListAsync();
 
             return list;
@@ -206,6 +222,8 @@ namespace Luveck.Service.Security.Repository
                 if (userExists != null) await _userManager.AccessFailedAsync(userExists);
                 throw new BusinessException(GeneralMessage.UserNoValid);
             }
+
+            if (!userExists.State) throw new BusinessException(GeneralMessage.UserInactive);
 
             if (await _userManager.IsLockedOutAsync(userExists))
             {

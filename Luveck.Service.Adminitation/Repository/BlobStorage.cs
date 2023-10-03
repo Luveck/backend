@@ -26,7 +26,7 @@ namespace Luveck.Service.Administration.Repository
             }
             return blobs;
         }
-        public async Task<string> UploadDocument(string connectionString, string containerName, string fileName, Stream fileContent)
+        public async Task<string> UploadDocument(string connectionString, string containerName, string fileName, Stream fileContent, string contentType)
         {
             try
             {
@@ -42,7 +42,9 @@ namespace Luveck.Service.Administration.Repository
                 if (!bobclient.Exists())
                 {
                     fileContent.Position = 0;
-                    await container.UploadBlobAsync(fileName, fileContent);
+                    var blobHttpHeader = new BlobHttpHeaders { ContentType = contentType };
+                    var uploadedBlob = await bobclient.UploadAsync(fileContent, new BlobUploadOptions { HttpHeaders = blobHttpHeader });
+
                     return "C";
                 }
                 else
@@ -54,7 +56,7 @@ namespace Luveck.Service.Administration.Repository
             }
             catch (System.Exception ex)
             {
-                return "E";
+                throw new FileNotFoundException();
             }
 
         }

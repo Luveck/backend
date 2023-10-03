@@ -67,19 +67,20 @@ namespace Luveck.Service.Administration.Repository
                 product = await _unitOfWork.ProductRepository.Find(x => x.Name.ToLower() == productDto.Name.ToLower());
 
                 string result = string.Empty;
-                foreach (var img in productDto.File)
-                {
-                    try
-                    {
-                        await LoadImageAsync(img, product.Id);
-                    }
-                    catch
-                    {
-                        result = "Se presento un problema cargando las imagenes.";
-                    }
-                }
+                //foreach (var img in productDto.File)
+                //{
+                //    try
+                //    {
+                //        await LoadImageAsync(img, product.Id);
+                //    }
+                //    catch
+                //    {
+                //        result = "Se presento un problema cargando las imagenes.";
+                //    }
+                //}
 
-                List<ProductImgResponseDto> url = await GetCarrusel();
+                //List<ProductImgResponseDto> url = await GetCarrusel();
+                //url = getImgByProductId(product.Id, url);
 
                 return new ProductResponseDto()
                 {
@@ -98,8 +99,6 @@ namespace Luveck.Service.Administration.Repository
                     TypeSell = product.TypeSell,
                     UpdateBy = product.UpdateBy,
                     UpdateDate = product.UpdateDate,
-                    statusUploadImage = result,
-                    urlImgs = !string.IsNullOrEmpty(result) ? getImgByProductId(product.Id, url) : null,
                 };
             }
             catch (Exception ex)
@@ -137,20 +136,21 @@ namespace Luveck.Service.Administration.Repository
                 _unitOfWork.ProductRepository.Update(productExist);
                 await _unitOfWork.SaveAsync();
 
-                string result = string.Empty;
-                foreach (var img in productDto.File)
-                {
-                    try
-                    {
-                        await LoadImageAsync(img, productDto.Id);
-                    }
-                    catch
-                    {
-                        result = "Se presento un problema cargando las imagenes.";
-                    }
-                }
+                //string result = string.Empty;
+                //foreach (var img in productDto.File)
+                //{
+                //    try
+                //    {
+                //        await LoadImageAsync(img, productDto.Id);
+                //    }
+                //    catch
+                //    {
+                //        result = "Se presento un problema cargando las imagenes.";
+                //    }
+                //}
 
-                List<ProductImgResponseDto> url = await GetCarrusel();
+                //List<ProductImgResponseDto> url = await GetCarrusel();
+                //url = getImgByProductId(productExist.Id, url);
 
                 return new ProductResponseDto()
                 {
@@ -170,8 +170,6 @@ namespace Luveck.Service.Administration.Repository
                     UpdateBy = productExist.UpdateBy,
                     UpdateDate = productExist.UpdateDate,
                     urlOficial = productExist.UrlOficial,
-                    statusUploadImage = result,
-                    urlImgs = !string.IsNullOrEmpty(result) ? getImgByProductId(productExist.Id, url) : null
                 };
             }
             catch (Exception ex)
@@ -220,9 +218,10 @@ namespace Luveck.Service.Administration.Repository
                                      TypeSell = prod.TypeSell,
                                      UpdateBy = prod.UpdateBy,
                                      UpdateDate = prod.UpdateDate,
-                                     urlOficial = prod.UrlOficial,
-                                     urlImgs = getImgByProductId(prod.Id, url)
+                                     urlOficial = prod.UrlOficial,                                     
                                  }).FirstOrDefaultAsync();
+
+            product.urlImgs = getImgByProductId(product.Id, url);
             return product;
         }
         public async Task<ProductResponseDto> GetProductByName(string name)
@@ -250,8 +249,10 @@ namespace Luveck.Service.Administration.Repository
                                      UpdateBy = prod.UpdateBy,
                                      UpdateDate = prod.UpdateDate,
                                      urlOficial = prod.UrlOficial,
-                                     urlImgs = getImgByProductId(prod.Id, url)
                                  }).FirstOrDefaultAsync();
+
+            product.urlImgs = getImgByProductId(product.Id, url);
+
             return product;
         }
         public async Task<ProductResponseDto> GetProductByBarcode(string barcode)
@@ -278,12 +279,13 @@ namespace Luveck.Service.Administration.Repository
                                      TypeSell = prod.TypeSell,
                                      UpdateBy = prod.UpdateBy,
                                      UpdateDate = prod.UpdateDate,
-                                     urlOficial = prod.UrlOficial,
-                                     urlImgs = getImgByProductId(prod.Id, url)
+                                     urlOficial = prod.UrlOficial
                                  }).FirstOrDefaultAsync();
+
+            product.urlImgs = getImgByProductId(product.Id, url); 
+
             return product;
         }
-
         public async Task<List<ProductResponseDto>> GetProducts()
         {
             List<ProductImgResponseDto> url = await GetCarrusel();
@@ -307,12 +309,14 @@ namespace Luveck.Service.Administration.Repository
                                                       UpdateDate = prod.UpdateDate,
                                                       IdCategory = cat.Id,
                                                       NameCategory = cat.Name,
-                                                      urlOficial = prod.UrlOficial,  
-                                                      urlImgs = getImgByProductId(prod.Id, url)
+                                                      urlOficial = prod.UrlOficial,                                                        
                                                   }).ToListAsync();
+            foreach (var item in lst)
+            {
+                item.urlImgs = getImgByProductId(item.Id, url);
+            }
             return lst;
         }
-
         public async Task<List<ProductResponseDto>> GetProductsByCategory(int idCategory)
         {
             List<ProductImgResponseDto> url = await GetCarrusel();
@@ -338,8 +342,13 @@ namespace Luveck.Service.Administration.Repository
                                                       IdCategory = cat.Id,
                                                       NameCategory = cat.Name,
                                                       urlOficial = prod.UrlOficial,
-                                                      urlImgs = getImgByProductId(prod.Id, url)
                                                   }).ToListAsync();
+
+            foreach (var item in lst)
+            {
+                item.urlImgs = getImgByProductId(item.Id, url);
+            }
+
             return lst;
         }
 
@@ -348,29 +357,32 @@ namespace Luveck.Service.Administration.Repository
         /// </summary>
         /// <param name="requestFile"></param>
         /// <returns></returns>
-        private async Task LoadImageAsync(FileRequestDto requestFile, int idProduct)
+        public async Task<bool> LoadImageAsync(FileRequestDto requestFile)
         {
             string url = _configuration.GetSection("MyConfig:StorageConnection").Value;            
             string container = _configuration.GetSection("MyConfig:ContainerName").Value;
 
             BlobStorage upload = new BlobStorage();
             var stream = new MemoryStream(Convert.FromBase64String(requestFile.FileBase64));
-            string result = await upload.UploadDocument(url, container, requestFile.Name + "(prod"+idProduct+")", stream);
+            string result = await upload.UploadDocument(url, container, "(prod"+ requestFile.productId + ")" + requestFile.Name, stream, requestFile.TypeFile);
 
             if (result.Equals("C"))
             {
                 await _unitOfWork.ImageProductRepository.InsertAsync(new ImageProduct()
                 {
-                    fileName = requestFile.Name + "(prod" + idProduct + ")",
-                    productId = idProduct
+                    fileName = "(prod" + requestFile.productId + ")" + requestFile.Name ,
+                    productId = requestFile.productId
                 });
                 await _unitOfWork.SaveAsync();
             }
+
+            return true;
         }
         private async Task<List<ProductImgResponseDto>> GetCarrusel()
         {
             string url = _configuration.GetSection("MyConfig:StorageConnection").Value;
             string container = _configuration.GetSection("MyConfig:ContainerName").Value;
+            string uri = _configuration.GetSection("MyConfig:uri").Value;
             BlobStorage getImgs = new BlobStorage();
             List<string> imgName = await getImgs.GetAllDocuments(url, container);
 
@@ -381,7 +393,7 @@ namespace Luveck.Service.Administration.Repository
                 imgData.Add(new ProductImgResponseDto()
                 {
                     imgName = img,
-                    url = url + "/" + container + "/" + img
+                    url = uri + container + "/" + img
                 });
             }
             return imgData;
@@ -396,7 +408,7 @@ namespace Luveck.Service.Administration.Repository
             
             if (response)
             {
-                var id = _unitOfWork.ImageProductRepository.FirstOrDefaultNoTracking(x => x.fileName.Equals(fileName));
+                var id = await _unitOfWork.ImageProductRepository.FirstOrDefaultNoTracking(x => x.fileName.Equals(fileName));
                 if(id != null)
                 {
                     _unitOfWork.ImageProductRepository.Delete(id.Id);
@@ -409,7 +421,7 @@ namespace Luveck.Service.Administration.Repository
 
         private List<ProductImgResponseDto> getImgByProductId(int productId, List<ProductImgResponseDto> imgData)
         {
-            return imgData.FindAll(x => x.imgName.ToLower().Contains("(prod" + productId + ")".ToLower())).ToList();
+            return imgData.FindAll(x => x.imgName.ToLower().StartsWith("(prod" + productId + ")".ToLower())).ToList();
         }
     }
 }

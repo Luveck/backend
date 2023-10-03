@@ -26,49 +26,23 @@ namespace Luveck.Service.Administration.Repository
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<CategoryResponseDto> CreateUpdateCategory(CategoryRequestDto categoryDto, string user)
+        public async Task<CategoryResponseDto> CreateCategory(CategoryRequestDto categoryDto, string user)
         {
             var catExist = await _unitOfWork.CategoryRepository.Find(x => x.Name.ToLower().Equals(categoryDto.Name.Trim().ToLower()));
             if (catExist != null) throw new BusinessException(GeneralMessage.CategoryExist);
 
             try
             {
-                if(categoryDto.Id == 0)
+                Category cate = new Category()
                 {
-                    Category cate = new Category()
-                    {
-                        Name = categoryDto.Name,
-                        CreateBy = user,
-                        CreationDate = DateTime.Now,
-                        IsDeleted = false,
-                        UpdateBy = user,
-                        UpdateDate = DateTime.Now,
-                    };
-                    await _unitOfWork.CategoryRepository.InsertAsync(cate);
-                }
-                else
-                {
-                    var category = await _unitOfWork.CategoryRepository.Find(x => x.Id == categoryDto.Id);
-                    if(category != null)
-                    {
-                        if (!category.Name.ToUpper().Equals(categoryDto.Name.ToUpper()))
-                        {
-                            var name = await _unitOfWork.CategoryRepository.Find(x => x.Name.ToUpper().Equals(categoryDto.Name.ToUpper()));
-
-                            if (name != null) throw new BusinessException(GeneralMessage.CategoryExist);
-                        }
-
-                        category.UpdateDate = DateTime.Now;
-                        category.UpdateBy = user;
-                        category.Name = categoryDto.Name;
-                        category.IsDeleted = categoryDto.IsDeleted;
-                        
-                        _unitOfWork.CategoryRepository.Update(category);                        
-                    }
-
-                    else throw new BusinessException(GeneralMessage.CategoryNoExist);
-                }
-
+                    Name = categoryDto.Name,
+                    CreateBy = user,
+                    CreationDate = DateTime.Now,
+                    IsDeleted = false,
+                    UpdateBy = user,
+                    UpdateDate = DateTime.Now,
+                };
+                await _unitOfWork.CategoryRepository.InsertAsync(cate);
                 await _unitOfWork.SaveAsync();
 
                 var cat = await _unitOfWork.CategoryRepository.Find(x => x.Name.ToLower() == categoryDto.Name.ToLower());
@@ -90,6 +64,48 @@ namespace Luveck.Service.Administration.Repository
                 throw ex;
             }
         }
+        public async Task<CategoryResponseDto> UpdateCategory(CategoryRequestDto categoryDto, string user)
+        {
+            var catExitId = await _unitOfWork.CategoryRepository.Find(x => x.Id == categoryDto.Id);
+            if (catExitId == null) throw new BusinessException(GeneralMessage.CategoryNoExist);
+
+            if (!catExitId.Name.ToLower().Equals(categoryDto.Name.ToLower()))
+            {
+                var catExist = await _unitOfWork.CategoryRepository.Find(x => x.Name.ToLower().Equals(categoryDto.Name.Trim().ToLower()));
+                if (catExist != null) throw new BusinessException(GeneralMessage.CategoryExist);
+            }
+
+            try
+            {
+
+                catExitId.UpdateDate = DateTime.Now;
+                catExitId.UpdateBy = user;
+                catExitId.Name = categoryDto.Name;
+                catExitId.IsDeleted = categoryDto.IsDeleted;
+
+                _unitOfWork.CategoryRepository.Update(catExitId);
+                await _unitOfWork.SaveAsync();
+
+                var cat = await _unitOfWork.CategoryRepository.Find(x => x.Id == categoryDto.Id);
+
+                return new CategoryResponseDto()
+                {
+                    Name = cat.Name,
+                    CreateBy = cat.CreateBy,
+                    CreationDate = cat.CreationDate,
+                    IsDeleted = cat.IsDeleted,
+                    Id = cat.Id,
+                    UpdateBy = cat.UpdateBy,
+                    UpdateDate = cat.UpdateDate
+                };
+
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
 
         public async Task<bool> deleteCategory(int id, string user)
         {
@@ -119,11 +135,11 @@ namespace Luveck.Service.Administration.Repository
             {
                 Id = x.Id,
                 CreateBy = x.CreateBy,
-                CreationDate= x.CreationDate,
+                CreationDate = x.CreationDate,
                 IsDeleted = x.IsDeleted,
                 Name = x.Name,
                 UpdateBy = x.UpdateBy,
-                UpdateDate = x.UpdateDate 
+                UpdateDate = x.UpdateDate
             }).ToListAsync();
 
             return lst;

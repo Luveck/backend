@@ -33,6 +33,7 @@ namespace Luveck.Service.Administration.Repository
                 {
                     List<ProductPurchase> lstToDelete = lstProductPurchase.FindAll(x => x.Exchanged == false && x.Losed == false);
                     _unitOfWork.ProductPurchaseRepository.Delete(lstToDelete);
+                    await _unitOfWork.SaveAsync();
 
                     List<ProductPurchase> lst = new List<ProductPurchase>();
 

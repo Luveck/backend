@@ -196,6 +196,15 @@ namespace Luveck.Service.Security.Utils.Resource {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to El usuario se encuentra inactivo..
+        /// </summary>
+        public static string UserInactive {
+            get {
+                return ResourceManager.GetString("UserInactive", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Información proporcionada es incorrecta..
         /// </summary>
         public static string UserNoExist {

@@ -90,8 +90,6 @@ namespace Luveck.Service.Administration.Repository
 
                             List<ProductPurchase> ruleApply = new List<ProductPurchase>();
                             ProductPruchaseByUser aux = null;
-                            int cantExchange = 0;
-                            int prodExchanged = 0;
                             foreach (var item in productExchange)
                             {
                                 if (aux == null)
@@ -115,7 +113,7 @@ namespace Luveck.Service.Administration.Repository
                             if (usersMail.Exists(x => x == u)) break;
                         }                        
                     }
-                    usersMail.Add("f855c211-467b-4cd8-8c67-9869023ea174");
+
                     if (usersMail.Count > 0)
                     {
                         await sedMailAsync(usersMail);

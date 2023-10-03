@@ -82,7 +82,7 @@ namespace Luveck.Service.Administration.Controllers
         {
             string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
 
-            CategoryResponseDto result = await _category.CreateUpdateCategory(category, user); ;
+            CategoryResponseDto result = await _category.CreateCategory(category, user); ;
             var response = new ResponseModel<CategoryResponseDto>()
             {
                 IsSuccess = true,
@@ -99,7 +99,7 @@ namespace Luveck.Service.Administration.Controllers
         {
             string user = this._headerClaims.GetClaimValue(Request.Headers["Authorization"], ClaimsToken.UserId);
 
-            CategoryResponseDto result = await _category.CreateUpdateCategory(category, user); ;
+            CategoryResponseDto result = await _category.UpdateCategory(category, user); ;
             var response = new ResponseModel<CategoryResponseDto>()
             {
                 IsSuccess = true,

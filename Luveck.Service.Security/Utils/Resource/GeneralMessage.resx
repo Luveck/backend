@@ -162,6 +162,9 @@
   <data name="UserBloqValid" xml:space="preserve">
     <value>Usuario bloqueado por intentos no validos.</value>
   </data>
+  <data name="UserInactive" xml:space="preserve">
+    <value>El usuario se encuentra inactivo.</value>
+  </data>
   <data name="UserNoExist" xml:space="preserve">
     <value>Información proporcionada es incorrecta.</value>
   </data>
