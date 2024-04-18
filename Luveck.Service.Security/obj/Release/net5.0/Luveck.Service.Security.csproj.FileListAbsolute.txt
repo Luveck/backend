@@ -80,3 +80,10 @@ D:\appLand\Luveck\Luveck\Luveck.Service.Security\bin\Release\net5.0\MailKit.dll
 D:\appLand\Luveck\Luveck\Luveck.Service.Security\bin\Release\net5.0\MimeKit.dll
 D:\appLand\Luveck\Luveck\Luveck.Service.Security\bin\Release\net5.0\NETCore.MailKit.dll
 D:\appLand\Luveck\Luveck\Luveck.Service.Security\bin\Release\net5.0\BouncyCastle.Crypto.dll
+D:\appLand\Luveck\Luveck\Luveck.Service.Security\obj\Release\net5.0\Luveck.Service.Security.Utils.Resource.GeneralMessage.resources
+D:\appLand\Luveck\Luveck\Luveck.Service.Security\obj\Release\net5.0\Luveck.Service.Security.csproj.GenerateResource.cache
+D:\appLand\Luveck\Luveck\Luveck.Service.Security\obj\Release\net5.0\staticwebassets\Luveck.Service.Security.StaticWebAssets.Pack.cache
+D:\appLand\Luveck\Luveck\Luveck.Service.Security\obj\Release\net5.0\staticwebassets\msbuild.Luveck.Service.Security.Microsoft.AspNetCore.StaticWebAssets.props
+D:\appLand\Luveck\Luveck\Luveck.Service.Security\obj\Release\net5.0\staticwebassets\msbuild.build.Luveck.Service.Security.props
+D:\appLand\Luveck\Luveck\Luveck.Service.Security\obj\Release\net5.0\staticwebassets\msbuild.buildMultiTargeting.Luveck.Service.Security.props
+D:\appLand\Luveck\Luveck\Luveck.Service.Security\obj\Release\net5.0\staticwebassets\msbuild.buildTransitive.Luveck.Service.Security.props

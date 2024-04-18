@@ -1,0 +1,9 @@
+﻿namespace Luveck.Service.Security.DTO.Response
+{
+    public class RoleResponseDto
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public bool state { get; set; }
+    }
+}

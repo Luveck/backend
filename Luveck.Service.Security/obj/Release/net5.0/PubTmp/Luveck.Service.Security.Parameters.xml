@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <parameters>
-  <parameter name="IIS Web Application Name" description="" value="LuveckServiceSecurity" tags="IisApp">
+  <parameter name="IIS Web Application Name" description="" value="appServicesLuveck" tags="IisApp">
     <parameterEntry kind="ProviderPath" scope="IisApp" match="^D:\\appLand\\Luveck\\Luveck\\Luveck\.Service\.Security\\obj\\Release\\net5\.0\\PubTmp\\Out\\$" />
   </parameter>
 </parameters>
