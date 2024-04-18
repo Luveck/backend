@@ -1,0 +1,11 @@
+# .NET Core
+bin/
+obj/
+.vscode/
+*.suo
+*.user
+*.dll
+*.exe
+*.pdb
+*.log
+*.vs
